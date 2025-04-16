@@ -1,6 +1,6 @@
-# Automate Podcast
+# AIPodFlow
 
-Automate Podcast is an open-source CLI tool that streamlines podcast production workflow, from transcript processing to content generation and publishing. It uses AI to generate titles, show notes, and ad placement suggestions based on podcast transcripts.
+AIPodFlow is an open-source CLI tool that leverages AI to streamline podcast production workflow, from transcript processing to content generation and publishing. It automates the generation of titles, show notes, and ad placement suggestions based on podcast transcripts.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
@@ -12,7 +12,7 @@ Automate Podcast is an open-source CLI tool that streamlines podcast production 
   - Create comprehensive show notes based on transcript content
   - Suggest optimal ad placement timecodes
 - **Interactive & Non-interactive Modes**: Choose content interactively or automatically
-- **Automated Publishing**: Seamless integration with Art19 for podcast hosting
+- **Automated Publishing**: Seamless integration with various podcast hosting platforms
 - **Vercel Integration**: Automate website updates when new episodes are published
 - **Social Media Support**: Generate content for Twitter/X posts
 
@@ -22,20 +22,20 @@ Automate Podcast is an open-source CLI tool that streamlines podcast production 
 
 - Go 1.18 or higher
 - OpenAI API key
-- Art19 credentials (optional, for publishing)
+- Podcast platform credentials (optional, for publishing)
 
 ### From Source
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/automate-podcast.git
-cd automate-podcast
+git clone https://github.com/yourusername/aipodflow.git
+cd aipodflow
 
 # Install dependencies
 go mod download
 
 # Build the binary
-go build -o automate-podcast ./cmd/podcast-cli
+go build -o aipodflow ./cmd/podcast-cli
 ```
 
 ## Configuration
@@ -46,9 +46,11 @@ Create a `.env` file in the project root with your API credentials:
 # OpenAI API Configuration
 OPENAI_API_KEY=your_openai_key
 
-# Art19 Configuration (optional)
+# Podcast Platform Configuration (optional)
+# For Art19:
 ART19_USERNAME=your_art19_username
 ART19_PASSWORD=your_art19_password
+# Other platforms can be added in the future
 
 # Twitter API Configuration (optional)
 TWITTER_API_KEY=your_twitter_key
@@ -66,16 +68,16 @@ VERCEL_DEPLOY_HOOK=your_vercel_hook_url
 
 ```bash
 # Interactive mode
-./automate-podcast process-transcript --input-transcript /path/to/transcript.txt
+./aipodflow process-transcript --input-transcript /path/to/transcript.txt
 
 # Non-interactive mode (auto-selects first candidates)
-./automate-podcast process-transcript --input-transcript /path/to/transcript.txt --non-interactive
+./aipodflow process-transcript --input-transcript /path/to/transcript.txt --non-interactive
 
 # Specify output directory
-./automate-podcast process-transcript --input-transcript /path/to/transcript.txt --output-dir ./output
+./aipodflow process-transcript --input-transcript /path/to/transcript.txt --output-dir ./output
 
-# Include audio file for Art19 upload
-./automate-podcast process-transcript --input-transcript /path/to/transcript.txt --input-audio /path/to/audio.mp3
+# Include audio file for podcast platform upload
+./aipodflow process-transcript --input-transcript /path/to/transcript.txt --input-audio /path/to/audio.mp3
 ```
 
 ### Command Options
@@ -86,7 +88,7 @@ Usage:
 
 Flags:
   -h, --help                      help for process-transcript
-  -a, --input-audio string        Path to audio file (required for Art19 upload)
+  -a, --input-audio string        Path to audio file (required for podcast platform upload)
   -t, --input-transcript string   Path to transcript file (required)
   -n, --non-interactive           Run in non-interactive mode (auto-select first candidates)
   -o, --output-dir string         Output directory for generated files
@@ -95,10 +97,10 @@ Flags:
 
 ## Architecture
 
-Automate Podcast is built using Go and implements a CLI tool for controlling the podcast production pipeline. It integrates with various services:
+AIPodFlow is built using Go and implements a CLI tool for controlling the podcast production pipeline. It integrates with various services:
 
 - OpenAI API for content generation
-- Art19 for podcast hosting
+- Various podcast hosting platforms (Art19, Spotify, etc.)
 - Vercel for website deployment
 - Twitter/X API for social media distribution
 
