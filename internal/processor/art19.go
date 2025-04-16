@@ -25,6 +25,12 @@ func NewArt19Processor(art19Service *services.Art19Service, logger *logrus.Logge
 
 // UploadDraft は選択されたコンテンツをArt19にドラフトとしてアップロードする
 func (p *Art19Processor) UploadDraft(ctx context.Context, audioPath string, content *model.SelectedContent) error {
+	// 音声ファイルが指定されていない場合はアップロードをスキップ
+	if audioPath == "" {
+		p.logger.Info("No audio file specified, skipping Art19 upload")
+		p.logger.Infof("Selected content would be uploaded: Title=%s, ShowNotes=[content omitted]", content.Title)
+		return nil
+	}
 	p.logger.Info("Preparing to upload to Art19...")
 	p.logger.Infof("Title: %s", content.Title)
 	p.logger.Info("Show Notes: [content omitted for brevity]")
