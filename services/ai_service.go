@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/automate-podcast/internal/model"
 	"github.com/sashabaranov/go-openai"
 	"github.com/sirupsen/logrus"
 )
@@ -20,7 +21,7 @@ type AIService struct {
 func NewAIService(openAIAPIKey string, logger *logrus.Logger) *AIService {
 	// OpenAIクライアントの初期化
 	client := openai.NewClient(openAIAPIKey)
-	
+
 	return &AIService{
 		openAIAPIKey: openAIAPIKey,
 		client:       client,
@@ -31,26 +32,26 @@ func NewAIService(openAIAPIKey string, logger *logrus.Logger) *AIService {
 // GenerateTitles はトランスクリプトからタイトル候補を生成する
 func (s *AIService) GenerateTitles(ctx context.Context, transcript string) ([]string, error) {
 	s.logger.Info("Generating title candidates...")
-	
+
 	// トランスクリプトが長すぎる場合は先頭部分を使用
 	truncatedTranscript := transcript
 	if len(transcript) > 4000 {
 		truncatedTranscript = transcript[:4000]
 	}
-	
+
 	// プロンプトの作成
 	prompt := fmt.Sprintf(
-		"以下はポッドキャストのトランスクリプトです。このトランスクリプトに基づいて、魅力的なポッドキャストのタイトルを生成してください。タイトルは簡潔で魅力的で、リスナーの興味を引くものにしてください。各タイトルはユニークであるべきです。\n\nトランスクリプト:\n%s\n\n10個のタイトル候補を生成し、各行に1つのタイトルを書いてください。番号や符号は付けないでください。",
+		"You are GenerativeAI acting as a podcast copy‑writer.\nGenerate:\n1. Title – follow the pattern:\n  NN. ＜Japanese topic 1＞ / ＜Japanese topic 2＞ [/ ＜Japanese topic 3＞]\n  • NN = episode number (integer).\n  • Provide 2 or 3 topics.\n  • Topics should be mainly in Japanese, but keep any necessary English words as‑is (AI, GPT, etc.).\n\nHere is the transcript of the podcast:\n%s\n\nPlease generate 10 unique title candidates, each on a new line. Do not include numbers or symbols at the beginning of each line.",
 		truncatedTranscript,
 	)
-	
+
 	// OpenAI APIリクエストの作成
 	req := openai.ChatCompletionRequest{
 		Model: openai.GPT4o,
 		Messages: []openai.ChatCompletionMessage{
 			{
 				Role:    openai.ChatMessageRoleSystem,
-				Content: "あなたはポッドキャストのタイトルを生成する専門家です。トランスクリプトの内容に基づいて、魅力的で具体的なタイトルを生成してください。",
+				Content: "You are GenerativeAI acting as a podcast copy‑writer. Generate titles following the specified pattern based on the transcript content.",
 			},
 			{
 				Role:    openai.ChatMessageRoleUser,
@@ -59,19 +60,19 @@ func (s *AIService) GenerateTitles(ctx context.Context, transcript string) ([]st
 		},
 		Temperature: 0.7,
 	}
-	
+
 	// API呼び出し
 	resp, err := s.client.CreateChatCompletion(ctx, req)
 	if err != nil {
 		s.logger.Errorf("OpenAI API error: %v", err)
 		return nil, fmt.Errorf("failed to generate titles: %w", err)
 	}
-	
+
 	// 結果のパース
 	responseText := resp.Choices[0].Message.Content
 	// 改行で分割してタイトルを取得
 	titles := strings.Split(strings.TrimSpace(responseText), "\n")
-	
+
 	// 10個のタイトルを確保
 	result := make([]string, 0, 10)
 	for _, title := range titles {
@@ -90,7 +91,7 @@ func (s *AIService) GenerateTitles(ctx context.Context, transcript string) ([]st
 			break
 		}
 	}
-	
+
 	// 候補が10個に満たない場合はデフォルトのタイトルで補完
 	if len(result) < 10 {
 		s.logger.Warnf("Generated only %d titles, filling with default titles", len(result))
@@ -110,7 +111,7 @@ func (s *AIService) GenerateTitles(ctx context.Context, transcript string) ([]st
 			result = append(result, defaultTitles[i-len(result)])
 		}
 	}
-	
+
 	s.logger.Infof("Generated %d title candidates", len(result))
 	return result, nil
 }
@@ -119,26 +120,26 @@ func (s *AIService) GenerateTitles(ctx context.Context, transcript string) ([]st
 func (s *AIService) GenerateShowNotes(ctx context.Context, transcript string) ([]string, error) {
 	// OpenAI APIを使用してShowNote候補を生成
 	s.logger.Info("Generating show note candidates...")
-	
+
 	// トランスクリプトが長すぎる場合は先頭部分を使用
 	truncatedTranscript := transcript
 	if len(transcript) > 6000 {
 		truncatedTranscript = transcript[:6000]
 	}
-	
+
 	// プロンプトの作成
 	prompt := fmt.Sprintf(
-		"以下はポッドキャストのトランスクリプトです。このトランスクリプトに基づいて、ポッドキャストのショーノート（要約と主要ポイント）を生成してください。ショーノートは、実際のトランスクリプトの内容に忠実に基づいたものにしてください。架空の人物や内容を含めないでください。\n\nトランスクリプト:\n%s\n\n10個のショーノート候補を生成してください。各ショーノートには以下を含めてください：\n1. エピソードの簡潔な要約\n2. 主な話題やポイント（箇条書き）\n3. 特に重要な引用や洞察（もしあれば）",
-		truncatedTranscript,
+		"You are GenerativeAI acting as a podcast copy‑writer.\nGenerate Show Notes with:\n  • Opening summary (2‑3 lines, friendly Japanese, plenty of relevant emojis, end each sentence with \"!\")\n  • 8‑12 bullet points, each starting with an emoji + concise headline + short description (1 line max)\n  • CTA block wrapped by dotted lines, asking for feedback via hashtag & follow/rating\n  • Credits block titled \"✨🎧 Credits\" listing hosts & contributors with emojis\nKeep the energetic, conversational tone and balance parenting & tech themes.\n\nHere is the transcript of the podcast:\n%s\n\nPlease generate 10 unique show note candidates.",
+		truncatedTranscript
 	)
-	
+
 	// OpenAI APIリクエストの作成
 	req := openai.ChatCompletionRequest{
 		Model: openai.GPT4o,
 		Messages: []openai.ChatCompletionMessage{
 			{
 				Role:    openai.ChatMessageRoleSystem,
-				Content: "あなたはポッドキャストのショーノートを作成する専門家です。トランスクリプトの内容に忠実に基づいて、リスナーが内容を理解しやすいショーノートを作成してください。架空の情報や登場しない人物について言及しないでください。",
+				Content: "You are GenerativeAI acting as a podcast copy‑writer. Create engaging show notes with an energetic tone, emojis, bullet points, and proper formatting as specified in the instructions.",
 			},
 			{
 				Role:    openai.ChatMessageRoleUser,
@@ -147,22 +148,22 @@ func (s *AIService) GenerateShowNotes(ctx context.Context, transcript string) ([
 		},
 		Temperature: 0.7,
 	}
-	
+
 	// API呼び出し
 	resp, err := s.client.CreateChatCompletion(ctx, req)
 	if err != nil {
 		s.logger.Errorf("OpenAI API error: %v", err)
 		return nil, fmt.Errorf("failed to generate show notes: %w", err)
 	}
-	
+
 	// 結果のパース
 	responseText := resp.Choices[0].Message.Content
-	
+
 	// ショーノートを分割（空行で区切られていると仮定）
 	// 複数の空行を一つの区切りとして扱う
 	showNotes := []string{}
 	currentNote := ""
-	
+
 	lines := strings.Split(responseText, "\n")
 	for _, line := range lines {
 		if strings.TrimSpace(line) == "" {
@@ -174,17 +175,17 @@ func (s *AIService) GenerateShowNotes(ctx context.Context, transcript string) ([
 			currentNote += line + "\n"
 		}
 	}
-	
+
 	// 最後のノートを追加
 	if strings.TrimSpace(currentNote) != "" {
 		showNotes = append(showNotes, strings.TrimSpace(currentNote))
 	}
-	
+
 	// 候補が見つからない場合は、全体を1つのショーノートとして扱う
 	if len(showNotes) == 0 {
 		showNotes = append(showNotes, responseText)
 	}
-	
+
 	// 10個のショーノートを確保
 	result := make([]string, 0, 10)
 	for i, note := range showNotes {
@@ -193,18 +194,18 @@ func (s *AIService) GenerateShowNotes(ctx context.Context, transcript string) ([
 		if len(note) > 2 && (note[0] >= '0' && note[0] <= '9') && (note[1] == '.' || note[1] == ':' || note[1] == ')') {
 			note = strings.TrimSpace(note[2:])
 		}
-		
+
 		// ショーノート番号のプレフィックスを削除
 		note = strings.TrimPrefix(note, fmt.Sprintf("ショーノート%d:", i+1))
 		note = strings.TrimPrefix(note, fmt.Sprintf("ショーノート候補%d:", i+1))
 		note = strings.TrimPrefix(note, fmt.Sprintf("候補%d:", i+1))
-		
+
 		result = append(result, strings.TrimSpace(note))
 		if len(result) >= 10 {
 			break
 		}
 	}
-	
+
 	// 候補が10個に満たない場合はデフォルトのショーノートで補完
 	if len(result) < 10 {
 		s.logger.Warnf("Generated only %d show notes, filling with default notes", len(result))
@@ -224,7 +225,7 @@ func (s *AIService) GenerateShowNotes(ctx context.Context, transcript string) ([
 			result = append(result, defaultNotes[i-len(result)])
 		}
 	}
-	
+
 	s.logger.Infof("Generated %d show note candidates", len(result))
 	return result, nil
 }
@@ -233,7 +234,7 @@ func (s *AIService) GenerateShowNotes(ctx context.Context, transcript string) ([
 func (s *AIService) GenerateAdTimecodes(ctx context.Context, transcript string) ([][]string, error) {
 	// OpenAI APIを使用して広告タイムコード候補を生成
 	s.logger.Info("Generating ad timecode candidates...")
-	
+
 	// ダミーデータ（実際の実装では、OpenAI APIを使用）
 	adTimecodes := [][]string{
 		{"00:05:30", "00:15:45", "00:25:20"},
@@ -247,6 +248,6 @@ func (s *AIService) GenerateAdTimecodes(ctx context.Context, transcript string) 
 		{"00:08:50", "00:19:30", "00:30:15"},
 		{"00:04:30", "00:14:00", "00:23:45"},
 	}
-	
+
 	return adTimecodes, nil
 }

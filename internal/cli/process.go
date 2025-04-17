@@ -69,6 +69,7 @@ func NewProcessCmd() *cobra.Command {
 
 			// 4. AI生成処理
 			logger.Info("Starting content generation...")
+			// サンプルリファレンスは使用せず、プロンプトに直接指示を含めるように変更
 			candidates, err := contentProcessor.GenerateCandidates(transcript)
 			if err != nil {
 				return fmt.Errorf("content generation failed: %w", err)
@@ -77,7 +78,7 @@ func NewProcessCmd() *cobra.Command {
 
 			// 5. 選択処理（インタラクティブまたは自動）
 			var selectedContent *model.SelectedContent
-			
+
 			if nonInteractive {
 				// 非インタラクティブモード: 最初の候補を自動選択
 				logger.Info("Running in non-interactive mode, automatically selecting first candidates...")
@@ -86,7 +87,7 @@ func NewProcessCmd() *cobra.Command {
 					ShowNote:    candidates.ShowNotes[0],
 					AdTimecodes: candidates.AdTimecodes[0],
 				}
-				
+
 				// すべての候補をファイルに出力
 				if outputDir != "" {
 					allCandidatesPath := filepath.Join(outputDir, "all_candidates.txt")
@@ -94,17 +95,17 @@ func NewProcessCmd() *cobra.Command {
 					for i, title := range candidates.Titles {
 						content += fmt.Sprintf("%d: %s\n", i+1, title)
 					}
-					
+
 					content += "\n=== Show Note Candidates ===\n"
 					for i, note := range candidates.ShowNotes {
 						content += fmt.Sprintf("%d:\n%s\n\n", i+1, note)
 					}
-					
+
 					content += "\n=== Ad Timecode Candidates ===\n"
 					for i, timecodes := range candidates.AdTimecodes {
 						content += fmt.Sprintf("%d: %v\n", i+1, timecodes)
 					}
-					
+
 					if err := os.WriteFile(allCandidatesPath, []byte(content), 0644); err != nil {
 						logger.Warnf("Failed to save all candidates to file: %v", err)
 					} else {
@@ -128,11 +129,11 @@ func NewProcessCmd() *cobra.Command {
 				// タイトルをファイル名として使用
 				sanitizedTitle := sanitizeFilename(selectedContent.Title)
 				outputPath := filepath.Join(outputDir, sanitizedTitle+".txt")
-				
+
 				// 内容を保存
 				content := fmt.Sprintf("Title: %s\n\nShow Notes:\n%s\n\nAd Timecodes: %v\n",
 					selectedContent.Title, selectedContent.ShowNote, selectedContent.AdTimecodes)
-				
+
 				if err := os.WriteFile(outputPath, []byte(content), 0644); err != nil {
 					logger.Warnf("Failed to save selection to file: %v", err)
 				} else {
@@ -170,14 +171,14 @@ func NewProcessCmd() *cobra.Command {
 func sanitizeFilename(filename string) string {
 	// ファイル名に使えない文字を置き換え
 	replacer := strings.NewReplacer(
-		"/", "_", 
-		"\\", "_", 
-		":", "_", 
-		"*", "_", 
-		"?", "_", 
-		"\"", "_", 
-		"<", "_", 
-		">", "_", 
+		"/", "_",
+		"\\", "_",
+		":", "_",
+		"*", "_",
+		"?", "_",
+		"\"", "_",
+		"<", "_",
+		">", "_",
 		"|", "_",
 	)
 	return replacer.Replace(filename)
