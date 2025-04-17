@@ -33,16 +33,13 @@ func NewAIService(openAIAPIKey string, logger *logrus.Logger) *AIService {
 func (s *AIService) GenerateTitles(ctx context.Context, transcript string) ([]string, error) {
 	s.logger.Info("Generating title candidates...")
 
-	// トランスクリプトが長すぎる場合は先頭部分を使用
-	truncatedTranscript := transcript
-	if len(transcript) > 4000 {
-		truncatedTranscript = transcript[:4000]
-	}
+	// 全文を使用するように変更
+	fullTranscript := transcript
 
 	// プロンプトの作成
 	prompt := fmt.Sprintf(
 		"You are GenerativeAI acting as a podcast copy‑writer.\nGenerate:\n1. Title – follow the pattern:\n  NN. ＜Japanese topic 1＞ / ＜Japanese topic 2＞ [/ ＜Japanese topic 3＞]\n  • NN = episode number (integer).\n  • Provide 2 or 3 topics.\n  • Topics should be mainly in Japanese, but keep any necessary English words as‑is (AI, GPT, etc.).\n\nHere is the transcript of the podcast:\n%s\n\nPlease generate 10 unique title candidates, each on a new line. Do not include numbers or symbols at the beginning of each line.",
-		truncatedTranscript,
+		fullTranscript,
 	)
 
 	// OpenAI APIリクエストの作成
@@ -121,16 +118,13 @@ func (s *AIService) GenerateShowNotes(ctx context.Context, transcript string) ([
 	// OpenAI APIを使用してShowNote候補を生成
 	s.logger.Info("Generating show note candidates...")
 
-	// トランスクリプトが長すぎる場合は先頭部分を使用
-	truncatedTranscript := transcript
-	if len(transcript) > 6000 {
-		truncatedTranscript = transcript[:6000]
-	}
+	// 全文を使用するように変更
+	fullTranscript := transcript
 
 	// プロンプトの作成
 	prompt := fmt.Sprintf(
 		"You are GenerativeAI acting as a podcast copy‑writer for a Japanese podcast about parenting and technology.\n\nGenerate ONE complete show note with EXACTLY this format:\n\n1. Opening summary: 2-3 lines in friendly Japanese with many relevant emojis. EVERY sentence MUST end with an exclamation mark (!).\n\n2. Bullet points: 8-12 points, each formatted as:\n   [emoji] [Bold headline in Japanese]: [Short description, maximum 1 line]\n\n3. CTA block: Wrapped in dotted lines (\"\u2026\u2026\u2026\"), asking for feedback via hashtag #momitfm and encouraging follows/ratings\n\n4. Credits section: Must be titled exactly \"✨🎧 Credits\" and list hosts (@_yukamiya & @m2vela) and intro creator (@kirillovlov2983)\n\nThe show note MUST maintain an energetic, conversational tone balancing parenting and tech themes.\n\nHere is the transcript of the podcast:\n%s\n\nGenerate EXACTLY ONE complete show note following ALL formatting requirements above. Do not number your response or include any text like 'Show Note 1:' at the beginning.",
-		truncatedTranscript
+		fullTranscript
 	)
 
 	// OpenAI APIリクエストの作成
