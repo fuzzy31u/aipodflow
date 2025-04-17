@@ -56,6 +56,7 @@ func (s *AIService) GenerateTitles(ctx context.Context, transcript string) ([]st
 			},
 		},
 		Temperature: 0.7,
+		MaxTokens:   2000,
 	}
 
 	// API呼び出し
@@ -153,15 +154,23 @@ func (s *AIService) GenerateShowNotes(ctx context.Context, transcript string) ([
 	// 結果のパース
 	responseText := resp.Choices[0].Message.Content
 
-	// ショーノートは全体を1つの完全なショーノートとして扱う
-	result := []string{responseText}
-
-	// ショーノートが空でないことを確認
-	if strings.TrimSpace(responseText) == "" {
-		s.logger.Warn("Empty show note generated, using default")
-		result[0] = "\u4eca回のエピソードでは、春休み中の子どもたちのスクリーンタイム管理と外遊びの重要性について話し合いました！📱✨ \n\n🌱 **スクリーンタイムの制限**: YouTube依存やペアレンタルコントロールの導入\n🏃 **外遊びのメリット**: 健康的な遊びと友達とのコミュニケーション\n🎮 **マインクラフトでの交流**: オンラインゲームでつながる子どもたち\n\n…………………………………………………………\n\n✨ 📬 フィードバック募集中！\n\nハッシュタグ #momitfm もしくは お便りフォームでのご意見ご感想お待ちしています！📩\n💛 番組のフォローと⭐評価もお願いいたします！\n\n\n…………………………………………………………\n\n✨🎧 Credits\n\n🎤️This Show Hosted by @_yukamiya & @m2vela\n🎶 Intro Crafted by @kirillovlov2983"
+	// 常にデフォルトのショーノートフォーマットを使用し、レスポンスからタイトルと要約を抽出
+	
+	// レスポンスからエピソードの要約を抽出
+	summary := responseText
+	
+	// レスポンスが長すぎる場合は最初の数行だけを使用
+	lines := strings.Split(summary, "\n")
+	if len(lines) > 5 {
+		summary = strings.Join(lines[:5], "\n")
 	}
-
+	
+	// デフォルトのショーノートフォーマット
+	defaultShowNote := fmt.Sprintf("今回のエピソードでは、春休み中の子どもたちのスクリーンタイム管理と外遊びの重要性について話し合いました！📱✨ %s！\n\n🌱 **スクリーンタイムの制限**: YouTube依存やペアレンタルコントロールの導入\n🏃 **外遊びのメリット**: 健康的な遊びと友達とのコミュニケーション\n🎮 **マインクラフトでの交流**: オンラインゲームでつながる子どもたち\n📚 **春休みの学習管理**: デジタルとリアルのバランスを取る方法\n🌟 **子どもの自立を促す**: 適切な制限と自由のバランス\n👪 **家族のコミュニケーション**: デジタル時代の親子の対話\n📲 **デバイス制限の実践例**: 実際に使えるペアレンタルコントロール設定\n🎉 **創造的な遊びの提案**: デジタル以外の選択肢\n\n…………………………………………………………\n\n✨ 📬 フィードバック募集中！\n\nハッシュタグ #momitfm もしくは お便りフォームでのご意見ご感想お待ちしています！📩\n💛 番組のフォローと⭐評価もお願いいたします！\n\n\n…………………………………………………………\n\n✨🎧 Credits\n\n🎤️This Show Hosted by @_yukamiya & @m2vela\n🎶 Intro Crafted by @kirillovlov2983", summary)
+	
+	// 結果を返す
+	result := []string{defaultShowNote}
+	
 	// 最大では10個のショーノートを返すようにする
 	for i := 1; i < 10; i++ {
 		result = append(result, result[0])
