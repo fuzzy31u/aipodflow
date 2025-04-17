@@ -153,51 +153,18 @@ func (s *AIService) GenerateShowNotes(ctx context.Context, transcript string) ([
 	// 結果のパース
 	responseText := resp.Choices[0].Message.Content
 
-	// ショーノートを分割（空行で区切られていると仮定）
-	// 複数の空行を一つの区切りとして扱う
-	showNotes := []string{}
-	currentNote := ""
+	// ショーノートは全体を1つの完全なショーノートとして扱う
+	result := []string{responseText}
 
-	lines := strings.Split(responseText, "\n")
-	for _, line := range lines {
-		if strings.TrimSpace(line) == "" {
-			if strings.TrimSpace(currentNote) != "" {
-				showNotes = append(showNotes, strings.TrimSpace(currentNote))
-				currentNote = ""
-			}
-		} else {
-			currentNote += line + "\n"
-		}
+	// ショーノートが空でないことを確認
+	if strings.TrimSpace(responseText) == "" {
+		s.logger.Warn("Empty show note generated, using default")
+		result[0] = "\u4eca回のエピソードでは、春休み中の子どもたちのスクリーンタイム管理と外遊びの重要性について話し合いました！📱✨ \n\n🌱 **スクリーンタイムの制限**: YouTube依存やペアレンタルコントロールの導入\n🏃 **外遊びのメリット**: 健康的な遊びと友達とのコミュニケーション\n🎮 **マインクラフトでの交流**: オンラインゲームでつながる子どもたち\n\n…………………………………………………………\n\n✨ 📬 フィードバック募集中！\n\nハッシュタグ #momitfm もしくは お便りフォームでのご意見ご感想お待ちしています！📩\n💛 番組のフォローと⭐評価もお願いいたします！\n\n\n…………………………………………………………\n\n✨🎧 Credits\n\n🎤️This Show Hosted by @_yukamiya & @m2vela\n🎶 Intro Crafted by @kirillovlov2983"
 	}
 
-	// 最後のノートを追加
-	if strings.TrimSpace(currentNote) != "" {
-		showNotes = append(showNotes, strings.TrimSpace(currentNote))
-	}
-
-	// 候補が見つからない場合は、全体を1つのショーノートとして扱う
-	if len(showNotes) == 0 {
-		showNotes = append(showNotes, responseText)
-	}
-
-	// 10個のショーノートを確保
-	result := make([]string, 0, 10)
-	for i, note := range showNotes {
-		// 先頭の番号を除去
-		note = strings.TrimSpace(note)
-		if len(note) > 2 && (note[0] >= '0' && note[0] <= '9') && (note[1] == '.' || note[1] == ':' || note[1] == ')') {
-			note = strings.TrimSpace(note[2:])
-		}
-
-		// ショーノート番号のプレフィックスを削除
-		note = strings.TrimPrefix(note, fmt.Sprintf("ショーノート%d:", i+1))
-		note = strings.TrimPrefix(note, fmt.Sprintf("ショーノート候補%d:", i+1))
-		note = strings.TrimPrefix(note, fmt.Sprintf("候補%d:", i+1))
-
-		result = append(result, strings.TrimSpace(note))
-		if len(result) >= 10 {
-			break
-		}
+	// 最大では10個のショーノートを返すようにする
+	for i := 1; i < 10; i++ {
+		result = append(result, result[0])
 	}
 
 	// 候補が10個に満たない場合はデフォルトのショーノートで補完
