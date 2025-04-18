@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/automate-podcast/internal/model"
@@ -66,47 +67,79 @@ func (s *AIService) GenerateTitles(ctx context.Context, transcript string) ([]st
 		return nil, fmt.Errorf("failed to generate titles: %w", err)
 	}
 
-	// 結果のパース
+	// Use the complete LLM response and parse it into individual titles
 	responseText := resp.Choices[0].Message.Content
 	// Split by newline to get titles
 	titles := strings.Split(strings.TrimSpace(responseText), "\n")
 
-	// Ensure 10 titles
+	// Process titles but preserve their original content
 	result := make([]string, 0, 10)
 	for _, title := range titles {
 		// Skip empty lines
 		if strings.TrimSpace(title) == "" {
 			continue
 		}
-		// Remove leading numbers, hyphens, and spaces
-		title = strings.TrimSpace(title)
-		// Remove numbering if present
-		if len(title) > 2 && (title[0] >= '0' && title[0] <= '9') && (title[1] == '.' || title[1] == ':' || title[1] == ')') {
-			title = strings.TrimSpace(title[2:])
-		}
-		result = append(result, title)
+		// Add the complete title as provided by the LLM
+		result = append(result, strings.TrimSpace(title))
 		if len(result) >= 10 {
 			break
 		}
 	}
 
-	// Fill with default titles if less than 10 candidates
+	// If we don't have enough titles, generate more by making additional API calls
 	if len(result) < 10 {
-		s.logger.Warnf("Generated only %d titles, filling with default titles", len(result))
-		defaultTitles := []string{
-			"今週のトピック：最新テクノロジーと子育ての融合",
-			"デジタル時代の子育て：テクノロジーとの上手な付き合い方",
-			"スマートな家庭作り：ITツールを活用した新しい子育てスタイル",
-			"ワーキングマザーのためのテクノロジー活用術",
-			"子育てとキャリアの両立：ITツールで効率化",
-			"次世代の子育て：デジタルネイティブを育てる",
-			"デジタルツールで変わる家族のコミュニケーション",
-			"テクノロジーでハッピーに：子育ての新しいアプローチ",
-			"スマートホームと子育て：便利で安全な環境づくり",
-			"デジタル時代の子育てバランス：スクリーンタイムと実体験",
+		s.logger.Info("Generated fewer than 10 titles, requesting additional titles")
+		
+		// Create a new prompt requesting more titles
+		additionalPrompt := fmt.Sprintf(
+			"You are GenerativeAI acting as a podcast copy‑writer.\nGenerate:\n1. Title – follow the pattern:\n  NN. ＜Japanese topic 1＞ / ＜Japanese topic 2＞ [/ ＜Japanese topic 3＞]\n  • NN = episode number (integer).\n  • Provide 2 or 3 topics.\n  • Topics should be mainly in Japanese, but keep any necessary English words as‑is (AI, GPT, etc.).\n\nHere is the transcript of the podcast:\n%s\n\nPlease generate %d MORE unique title candidates, each on a new line. These should be DIFFERENT from your previous suggestions. Do not include numbers or symbols at the beginning of each line.",
+			fullTranscript,
+			10 - len(result),
+		)
+		
+		// Create a new request for additional titles
+		additionalReq := openai.ChatCompletionRequest{
+			Model: openai.GPT4o,
+			Messages: []openai.ChatCompletionMessage{
+				{
+					Role:    openai.ChatMessageRoleSystem,
+					Content: "You are GenerativeAI acting as a podcast copy‑writer. Generate titles following the specified pattern based on the transcript content.",
+				},
+				{
+					Role:    openai.ChatMessageRoleUser,
+					Content: additionalPrompt,
+				},
+			},
+			Temperature: 0.8, // Slightly higher temperature for more variation
+			MaxTokens:   2000,
 		}
-		for i := len(result); i < 10; i++ {
-			result = append(result, defaultTitles[i-len(result)])
+		
+		// Make the API call for additional titles
+		additionalResp, err := s.client.CreateChatCompletion(ctx, additionalReq)
+		if err != nil {
+			s.logger.Warnf("Failed to generate additional titles: %v", err)
+		} else {
+			// Process additional titles
+			additionalText := additionalResp.Choices[0].Message.Content
+			additionalTitles := strings.Split(strings.TrimSpace(additionalText), "\n")
+			
+			for _, title := range additionalTitles {
+				if strings.TrimSpace(title) == "" {
+					continue
+				}
+				result = append(result, strings.TrimSpace(title))
+				if len(result) >= 10 {
+					break
+				}
+			}
+		}
+		
+		// If we still don't have 10 titles, duplicate the ones we have
+		if len(result) < 10 {
+			s.logger.Warnf("Still only generated %d titles, duplicating existing ones", len(result))
+			for i := len(result); i < 10; i++ {
+				result = append(result, result[i % len(result)])
+			}
 		}
 	}
 
@@ -154,45 +187,51 @@ func (s *AIService) GenerateShowNotes(ctx context.Context, transcript string) ([
 	// 結果のパース
 	responseText := resp.Choices[0].Message.Content
 
-	// Always use the default show note format and extract title and summary from the response
+	// Use the complete LLM-generated show note without modifications
+	result := []string{responseText}
 	
-	// Extract episode summary from the response
-	summary := responseText
-	
-	// Use only the first few lines if the response is too long
-	lines := strings.Split(summary, "\n")
-	if len(lines) > 5 {
-		summary = strings.Join(lines[:5], "\n")
-	}
-	
-	// Default show note format
-	defaultShowNote := fmt.Sprintf("今回のエピソードでは、春休み中の子どもたちのスクリーンタイム管理と外遊びの重要性について話し合いました！📱✨ %s！\n\n🌱 **スクリーンタイムの制限**: YouTube依存やペアレンタルコントロールの導入\n🏃 **外遊びのメリット**: 健康的な遊びと友達とのコミュニケーション\n🎮 **マインクラフトでの交流**: オンラインゲームでつながる子どもたち\n📚 **春休みの学習管理**: デジタルとリアルのバランスを取る方法\n🌟 **子どもの自立を促す**: 適切な制限と自由のバランス\n👪 **家族のコミュニケーション**: デジタル時代の親子の対話\n📲 **デバイス制限の実践例**: 実際に使えるペアレンタルコントロール設定\n🎉 **創造的な遊びの提案**: デジタル以外の選択肢\n\n…………………………………………………………\n\n✨ 📬 フィードバック募集中！\n\nハッシュタグ #momitfm もしくは お便りフォームでのご意見ご感想お待ちしています！📩\n💛 番組のフォローと⭐評価もお願いいたします！\n\n\n…………………………………………………………\n\n✨🎧 Credits\n\n🎤️This Show Hosted by @_yukamiya & @m2vela\n🎶 Intro Crafted by @kirillovlov2983", summary)
-	
-	// Return the results
-	result := []string{defaultShowNote}
-	
-	// Return up to 10 show notes
+	// Generate 9 more variations by requesting them one by one
 	for i := 1; i < 10; i++ {
-		result = append(result, result[0])
+		// Create a new prompt for each variation
+		variantPrompt := fmt.Sprintf(
+			"You are GenerativeAI acting as a podcast copy‑writer for a Japanese podcast about parenting and technology.\n\nGenerate a DIFFERENT show note with EXACTLY this format:\n\n1. Opening summary: 2-3 lines in friendly Japanese with many relevant emojis. EVERY sentence MUST end with an exclamation mark (!).\n\n2. Bullet points: 8-12 points, each formatted as:\n   [emoji] [Bold headline in Japanese]: [Short description, maximum 1 line]\n\n3. CTA block: Wrapped in dotted lines (\"\u2026\u2026\u2026\"), asking for feedback via hashtag #momitfm and encouraging follows/ratings\n\n4. Credits section: Must be titled exactly \"✨🎧 Credits\" and list hosts (@_yukamiya & @m2vela) and intro creator (@kirillovlov2983)\n\nThe show note MUST maintain an energetic, conversational tone balancing parenting and tech themes.\n\nHere is the transcript of the podcast:\n%s\n\nThis should be DIFFERENT from your previous response. Generate EXACTLY ONE complete show note following ALL formatting requirements above.",
+			fullTranscript,
+		)
+		
+		// Create a new request for each variation
+		variantReq := openai.ChatCompletionRequest{
+			Model: openai.GPT4o,
+			Messages: []openai.ChatCompletionMessage{
+				{
+					Role:    openai.ChatMessageRoleSystem,
+					Content: "You are GenerativeAI acting as a podcast copy‑writer for a Japanese podcast about parenting and technology. Follow the formatting instructions EXACTLY. Include emojis, proper bullet points, and all required sections.",
+				},
+				{
+					Role:    openai.ChatMessageRoleUser,
+					Content: variantPrompt,
+				},
+			},
+			Temperature: 0.8, // Slightly higher temperature for more variation
+		}
+		
+		// Make the API call for each variation
+		variantResp, err := s.client.CreateChatCompletion(ctx, variantReq)
+		if err != nil {
+			s.logger.Warnf("Failed to generate show note variant %d: %v, using first variant instead", i+1, err)
+			result = append(result, result[0])
+			continue
+		}
+		
+		// Add the complete response to results
+		result = append(result, variantResp.Choices[0].Message.Content)
 	}
 
-	// Fill with default show notes if less than 10 candidates
+	// If we couldn't generate 10 unique show notes, log a warning
 	if len(result) < 10 {
-		s.logger.Warnf("Generated only %d show notes, filling with default notes", len(result))
-		defaultNotes := []string{
-			"今回のエピソードでは、子育てとテクノロジーの関係について議論しました。主な話題には、子どものスクリーンタイム管理や教育アプリの活用法が含まれます。",
-			"デジタル時代の子育てについて考察するエピソード。ペアレンタルコントロールの設定方法や、子どもの発達に適したコンテンツの選び方についてアドバイスを共有しています。",
-			"テクノロジーを活用した子育ての効率化について話し合いました。家事の自動化から子どもの学習サポートまで、ワーキングマザーのための実践的なヒントを紹介。",
-			"子どものデジタルリテラシーを育てる方法について議論。年齢に応じたデバイス利用のルール作りや、オンライン安全教育の重要性について語りました。",
-			"家族のコミュニケーションを促進するテクノロジーの活用法を紹介。忙しい日常の中でも家族の絆を深めるためのアプリやツールについて共有しました。",
-			"子どもの創造性を育むデジタルツールについて探求。プログラミング学習アプリから創作活動をサポートするソフトウェアまで、様々な選択肢を紹介しています。",
-			"デジタルデトックスの重要性と実践方法について議論。家族全体でスクリーンタイムのバランスを取るための具体的な戦略を共有しました。",
-			"子どもの健康とテクノロジーの関係について考察。適切な睡眠習慣の維持や身体活動の促進に役立つアプリやデバイスを紹介しています。",
-			"未来の教育とテクノロジーの融合について展望。AIやVRなどの最新技術が子どもの学習体験をどのように変革する可能性があるかを議論しました。",
-			"デジタル世代の子育てにおける親の役割について考察。テクノロジーの変化に対応しながら、基本的な価値観や人間関係のスキルを教える重要性を強調しています。",
-		}
+		s.logger.Warnf("Generated only %d show notes, some may be duplicates", len(result))
+		// Fill remaining slots with the first result if needed
 		for i := len(result); i < 10; i++ {
-			result = append(result, defaultNotes[i-len(result)])
+			result = append(result, result[0])
 		}
 	}
 
@@ -205,19 +244,146 @@ func (s *AIService) GenerateAdTimecodes(ctx context.Context, transcript string) 
 	// Generate ad timecode candidates using OpenAI API
 	s.logger.Info("Generating ad timecode candidates...")
 
-	// Dummy data (in actual implementation, use OpenAI API)
-	adTimecodes := [][]string{
-		{"00:05:30", "00:15:45", "00:25:20"},
-		{"00:07:15", "00:18:30", "00:28:10"},
-		{"00:04:50", "00:14:25", "00:24:00"},
-		{"00:06:40", "00:16:55", "00:26:30"},
-		{"00:08:20", "00:19:10", "00:29:45"},
-		{"00:05:10", "00:15:25", "00:25:50"},
-		{"00:07:35", "00:17:40", "00:27:15"},
-		{"00:06:05", "00:16:20", "00:26:00"},
-		{"00:08:50", "00:19:30", "00:30:15"},
-		{"00:04:30", "00:14:00", "00:23:45"},
+	// Use the full transcript
+	fullTranscript := transcript
+
+	// Create the prompt for ad timecode generation
+	prompt := fmt.Sprintf(
+		"You are GenerativeAI acting as a podcast producer.\n\nAnalyze this podcast transcript and identify the 3 best places to insert advertisements.\n\nProvide EXACTLY 3 timecodes in the format HH:MM:SS (or MM:SS if less than an hour).\n\nChoose natural break points in the conversation where an ad would be least disruptive.\n\nHere is the transcript of the podcast:\n%s\n\nRespond ONLY with the 3 timecodes, one per line, in chronological order. Do not include any other text or explanations.",
+		fullTranscript,
+	)
+
+	// Create OpenAI API request
+	req := openai.ChatCompletionRequest{
+		Model: openai.GPT4o,
+		Messages: []openai.ChatCompletionMessage{
+			{
+				Role:    openai.ChatMessageRoleSystem,
+				Content: "You are GenerativeAI acting as a podcast producer. You identify optimal ad placement timecodes in podcast transcripts.",
+			},
+			{
+				Role:    openai.ChatMessageRoleUser,
+				Content: prompt,
+			},
+		},
+		Temperature: 0.3, // Lower temperature for more precise timecode generation
 	}
 
-	return adTimecodes, nil
+	// Make the API call
+	resp, err := s.client.CreateChatCompletion(ctx, req)
+	if err != nil {
+		s.logger.Errorf("OpenAI API error: %v", err)
+		return nil, fmt.Errorf("failed to generate ad timecodes: %w", err)
+	}
+
+	// Parse the response
+	responseText := resp.Choices[0].Message.Content
+	timecodeLines := strings.Split(strings.TrimSpace(responseText), "\n")
+
+	// Create the first set of timecodes
+	firstSet := make([]string, 0, 3)
+	for _, line := range timecodeLines {
+		timecode := strings.TrimSpace(line)
+		if timecode != "" {
+			firstSet = append(firstSet, timecode)
+		}
+	}
+
+	// Ensure we have exactly 3 timecodes in the first set
+	for len(firstSet) < 3 {
+		// Add a placeholder timecode if we don't have enough
+		firstSet = append(firstSet, fmt.Sprintf("00:%02d:00", 10+len(firstSet)*5))
+	}
+
+	// Generate 9 more variations with slightly different timecodes
+	result := [][]string{firstSet}
+
+	// Generate 9 more variations by requesting them one by one
+	for i := 1; i < 10; i++ {
+		// Create a new prompt for each variation
+		variantPrompt := fmt.Sprintf(
+			"You are GenerativeAI acting as a podcast producer.\n\nAnalyze this podcast transcript and identify the 3 best places to insert advertisements.\n\nProvide EXACTLY 3 timecodes in the format HH:MM:SS (or MM:SS if less than an hour).\n\nChoose natural break points in the conversation where an ad would be least disruptive.\n\nHere is the transcript of the podcast:\n%s\n\nRespond ONLY with the 3 timecodes, one per line, in chronological order. These should be DIFFERENT from previous suggestions. Do not include any other text or explanations.",
+			fullTranscript,
+		)
+
+		// Create a new request for each variation
+		variantReq := openai.ChatCompletionRequest{
+			Model: openai.GPT4o,
+			Messages: []openai.ChatCompletionMessage{
+				{
+					Role:    openai.ChatMessageRoleSystem,
+					Content: "You are GenerativeAI acting as a podcast producer. You identify optimal ad placement timecodes in podcast transcripts.",
+				},
+				{
+					Role:    openai.ChatMessageRoleUser,
+					Content: variantPrompt,
+				},
+			},
+			Temperature: 0.5 + float32(i)*0.05, // Gradually increase temperature for more variation
+		}
+
+		// Make the API call for each variation
+		variantResp, err := s.client.CreateChatCompletion(ctx, variantReq)
+		if err != nil {
+			s.logger.Warnf("Failed to generate ad timecode variant %d: %v, using first variant instead", i+1, err)
+			// If we fail to generate a variation, create one by slightly modifying the first set
+			modifiedSet := make([]string, len(firstSet))
+			for j, tc := range firstSet {
+				// Parse the timecode
+				parts := strings.Split(tc, ":")
+				if len(parts) == 2 {
+					// MM:SS format
+					minutes, _ := strconv.Atoi(parts[0])
+					seconds, _ := strconv.Atoi(parts[1])
+					// Add a small offset based on the variant number
+					seconds += i * (j + 1)
+					minutes += seconds / 60
+					seconds %= 60
+					modifiedSet[j] = fmt.Sprintf("%02d:%02d", minutes, seconds)
+				} else if len(parts) == 3 {
+					// HH:MM:SS format
+					hours, _ := strconv.Atoi(parts[0])
+					minutes, _ := strconv.Atoi(parts[1])
+					seconds, _ := strconv.Atoi(parts[2])
+					// Add a small offset based on the variant number
+					seconds += i * (j + 1)
+					minutes += seconds / 60
+					seconds %= 60
+					hours += minutes / 60
+					minutes %= 60
+					modifiedSet[j] = fmt.Sprintf("%02d:%02d:%02d", hours, minutes, seconds)
+				} else {
+					// Invalid format, use a default
+					modifiedSet[j] = fmt.Sprintf("00:%02d:%02d", (10+j*5), (i*3))
+				}
+			}
+			result = append(result, modifiedSet)
+			continue
+		}
+
+		// Parse the response
+		variantText := variantResp.Choices[0].Message.Content
+		variantLines := strings.Split(strings.TrimSpace(variantText), "\n")
+
+		// Create a set of timecodes from the variant
+		variantSet := make([]string, 0, 3)
+		for _, line := range variantLines {
+			timecode := strings.TrimSpace(line)
+			if timecode != "" {
+				variantSet = append(variantSet, timecode)
+			}
+		}
+
+		// Ensure we have exactly 3 timecodes in each variant
+		for len(variantSet) < 3 {
+			// Add a placeholder timecode if we don't have enough
+			variantSet = append(variantSet, fmt.Sprintf("00:%02d:00", 10+(len(variantSet)+i)*5))
+		}
+
+		// Add the variant to the result
+		result = append(result, variantSet)
+	}
+
+	s.logger.Infof("Generated %d ad timecode candidates", len(result))
+	return result, nil
 }
