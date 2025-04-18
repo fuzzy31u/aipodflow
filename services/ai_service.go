@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/automate-podcast/internal/model"
 	"github.com/sashabaranov/go-openai"
 	"github.com/sirupsen/logrus"
 )
@@ -157,7 +156,7 @@ func (s *AIService) GenerateShowNotes(ctx context.Context, transcript string) ([
 	// プロンプトの作成
 	prompt := fmt.Sprintf(
 		"You are GenerativeAI acting as a podcast copy‑writer for a Japanese podcast about parenting and technology.\n\nGenerate ONE complete show note with EXACTLY this format:\n\n1. Opening summary: 2-3 lines in friendly Japanese with many relevant emojis. EVERY sentence MUST end with an exclamation mark (!).\n\n2. Bullet points: 8-12 points, each formatted as:\n   [emoji] [Bold headline in Japanese]: [Short description, maximum 1 line]\n\n3. CTA block: Wrapped in dotted lines (\"\u2026\u2026\u2026\"), asking for feedback via hashtag #momitfm and encouraging follows/ratings\n\n4. Credits section: Must be titled exactly \"✨🎧 Credits\" and list hosts (@_yukamiya & @m2vela) and intro creator (@kirillovlov2983)\n\nThe show note MUST maintain an energetic, conversational tone balancing parenting and tech themes.\n\nHere is the transcript of the podcast:\n%s\n\nGenerate EXACTLY ONE complete show note following ALL formatting requirements above. Do not number your response or include any text like 'Show Note 1:' at the beginning.",
-		fullTranscript
+		fullTranscript,
 	)
 
 	// OpenAI APIリクエストの作成
