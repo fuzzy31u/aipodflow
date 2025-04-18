@@ -15,7 +15,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// NewProcessCmd はトランスクリプト処理コマンドを作成する
+// NewProcessCmd creates a command for transcript processing
 func NewProcessCmd() *cobra.Command {
 	var inputTranscript string
 	var inputAudio string
@@ -28,7 +28,7 @@ func NewProcessCmd() *cobra.Command {
 		Short: "Process podcast transcript",
 		Long:  `Process podcast transcript to generate show notes and upload to Art19.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// ロガーの初期化
+			// Initialize logger
 			logger := logrus.New()
 			if verbose {
 				logger.SetLevel(logrus.DebugLevel)
@@ -39,20 +39,20 @@ func NewProcessCmd() *cobra.Command {
 				FullTimestamp: true,
 			})
 
-			// 設定の読み込み
+			// Load configuration
 			cfg, err := config.LoadConfig()
 			if err != nil {
 				return fmt.Errorf("failed to load configuration: %w", err)
 			}
 
-			// 出力ディレクトリの作成
+			// Create output directory
 			if outputDir != "" {
 				if err := os.MkdirAll(outputDir, 0755); err != nil {
 					return fmt.Errorf("failed to create output directory: %w", err)
 				}
 			}
 
-			// 1. トランスクリプト読み込み
+			// 1. Load transcript
 			logger.Infof("Loading transcript from %s", inputTranscript)
 			transcript, err := processor.LoadTranscript(inputTranscript)
 			if err != nil {
@@ -60,27 +60,27 @@ func NewProcessCmd() *cobra.Command {
 			}
 			logger.Info("Transcript loaded successfully")
 
-			// 2. サービスの初期化
+			// 2. Initialize services
 			aiService := services.NewAIService(cfg.OpenAIAPIKey, logger)
 			art19Service := services.NewArt19Service(cfg.Art19Username, cfg.Art19Password, logger)
 
-			// 3. プロセッサーの初期化
+			// 3. Initialize processor
 			contentProcessor := processor.NewContentProcessor(aiService, logger)
 
-			// 4. AI生成処理
+			// 4. AI generation process
 			logger.Info("Starting content generation...")
-			// サンプルリファレンスは使用せず、プロンプトに直接指示を含めるように変更
+			// Changed to include instructions directly in the prompt instead of using sample references
 			candidates, err := contentProcessor.GenerateCandidates(transcript)
 			if err != nil {
 				return fmt.Errorf("content generation failed: %w", err)
 			}
 			logger.Info("Content generation completed")
 
-			// 5. 選択処理（インタラクティブまたは自動）
+			// 5. Selection process (interactive or automatic)
 			var selectedContent *model.SelectedContent
 
 			if nonInteractive {
-				// 非インタラクティブモード: 最初の候補を自動選択
+				// Non-interactive mode: automatically select the first candidates
 				logger.Info("Running in non-interactive mode, automatically selecting first candidates...")
 				selectedContent = &model.SelectedContent{
 					Title:       candidates.Titles[0],
@@ -88,7 +88,7 @@ func NewProcessCmd() *cobra.Command {
 					AdTimecodes: candidates.AdTimecodes[0],
 				}
 
-				// すべての候補をファイルに出力
+				// Output all candidates to file
 				if outputDir != "" {
 					allCandidatesPath := filepath.Join(outputDir, "all_candidates.txt")
 					content := "=== Title Candidates ===\n"
@@ -113,7 +113,7 @@ func NewProcessCmd() *cobra.Command {
 					}
 				}
 			} else {
-				// インタラクティブモード
+				// Interactive mode
 				interactiveUI := ui.NewInteractiveUI(logger)
 				logger.Info("Starting interactive selection...")
 				var err error
@@ -124,13 +124,13 @@ func NewProcessCmd() *cobra.Command {
 			}
 			logger.Info("Selection completed")
 
-			// 6. 選択内容の保存（オプション）
+			// 6. Save selection (optional)
 			if outputDir != "" {
-				// タイトルをファイル名として使用
+				// Use title as filename
 				sanitizedTitle := sanitizeFilename(selectedContent.Title)
 				outputPath := filepath.Join(outputDir, sanitizedTitle+".txt")
 
-				// 内容を保存
+				// Save content
 				content := fmt.Sprintf("Title: %s\n\nShow Notes:\n%s\n\nAd Timecodes: %v\n",
 					selectedContent.Title, selectedContent.ShowNote, selectedContent.AdTimecodes)
 
@@ -141,7 +141,7 @@ func NewProcessCmd() *cobra.Command {
 				}
 			}
 
-			// 7. Art19アップロード
+			// 7. Art19 upload
 			art19Processor := processor.NewArt19Processor(art19Service, logger)
 			logger.Info("Starting Art19 upload process...")
 			if err := art19Processor.UploadDraft(cmd.Context(), inputAudio, selectedContent); err != nil {
@@ -153,23 +153,23 @@ func NewProcessCmd() *cobra.Command {
 		},
 	}
 
-	// フラグの設定
+	// Set flags
 	processCmd.Flags().StringVarP(&inputTranscript, "input-transcript", "t", "", "Path to transcript file (required)")
 	processCmd.Flags().StringVarP(&inputAudio, "input-audio", "a", "", "Path to audio file (required)")
 	processCmd.Flags().StringVarP(&outputDir, "output-dir", "o", "", "Output directory for generated files")
 	processCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "Enable verbose logging")
 	processCmd.Flags().BoolVarP(&nonInteractive, "non-interactive", "n", false, "Run in non-interactive mode (auto-select first candidates)")
 
-	// 必須フラグの設定
+	// Set required flags
 	processCmd.MarkFlagRequired("input-transcript")
-	// 音声ファイルは任意（Art19アップロード時のみ必要）
+	// Audio file is optional (only required for Art19 upload)
 
 	return processCmd
 }
 
-// sanitizeFilename はファイル名に使えない文字を置き換える
+// sanitizeFilename replaces characters that cannot be used in filenames
 func sanitizeFilename(filename string) string {
-	// ファイル名に使えない文字を置き換え
+	// Replace characters that cannot be used in filenames
 	replacer := strings.NewReplacer(
 		"/", "_",
 		"\\", "_",

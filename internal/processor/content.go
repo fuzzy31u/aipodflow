@@ -9,13 +9,13 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// ContentProcessor はコンテンツ生成処理を担当する
+// ContentProcessor is responsible for content generation processing
 type ContentProcessor struct {
 	aiService *services.AIService
 	logger    *logrus.Logger
 }
 
-// NewContentProcessor は新しいContentProcessorインスタンスを作成する
+// NewContentProcessor creates a new ContentProcessor instance
 func NewContentProcessor(aiService *services.AIService, logger *logrus.Logger) *ContentProcessor {
 	return &ContentProcessor{
 		aiService: aiService,
@@ -23,13 +23,13 @@ func NewContentProcessor(aiService *services.AIService, logger *logrus.Logger) *
 	}
 }
 
-// GenerateCandidates はトランスクリプトからコンテンツ候補を生成する
+// GenerateCandidates generates content candidates from a transcript
 func (p *ContentProcessor) GenerateCandidates(transcript string) (*model.ContentCandidates, error) {
 	ctx := context.Background()
 
 	p.logger.Info("Starting content generation process...")
 
-	// 1. タイトル候補生成
+	// 1. Generate title candidates
 	p.logger.Info("Generating title candidates...")
 	titles, err := p.aiService.GenerateTitles(ctx, transcript)
 	if err != nil {
@@ -37,7 +37,7 @@ func (p *ContentProcessor) GenerateCandidates(transcript string) (*model.Content
 	}
 	p.logger.Infof("Generated %d title candidates", len(titles))
 
-	// 2. ShowNote候補生成
+	// 2. Generate show note candidates
 	p.logger.Info("Generating show note candidates...")
 	showNotes, err := p.aiService.GenerateShowNotes(ctx, transcript)
 	if err != nil {
@@ -45,7 +45,7 @@ func (p *ContentProcessor) GenerateCandidates(transcript string) (*model.Content
 	}
 	p.logger.Infof("Generated %d show note candidates", len(showNotes))
 
-	// 3. 広告タイムコード候補生成
+	// 3. Generate ad timecode candidates
 	p.logger.Info("Generating ad timecode candidates...")
 	adTimecodes, err := p.aiService.GenerateAdTimecodes(ctx, transcript)
 	if err != nil {
