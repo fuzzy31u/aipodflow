@@ -10,16 +10,16 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// AIService はAI関連の処理を担当するサービス
+// AIService is a service responsible for AI-related processing
 type AIService struct {
 	openAIAPIKey string
 	client       *openai.Client
 	logger       *logrus.Logger
 }
 
-// NewAIService は新しいAIServiceインスタンスを作成する
+// NewAIService creates a new AIService instance
 func NewAIService(openAIAPIKey string, logger *logrus.Logger) *AIService {
-	// OpenAIクライアントの初期化
+	// Initialize OpenAI client
 	client := openai.NewClient(openAIAPIKey)
 
 	return &AIService{
@@ -29,7 +29,7 @@ func NewAIService(openAIAPIKey string, logger *logrus.Logger) *AIService {
 	}
 }
 
-// GenerateTitles はトランスクリプトからタイトル候補を生成する
+// GenerateTitles generates title candidates from a transcript
 func (s *AIService) GenerateTitles(ctx context.Context, transcript string) ([]string, error) {
 	s.logger.Info("Generating title candidates...")
 
@@ -68,19 +68,19 @@ func (s *AIService) GenerateTitles(ctx context.Context, transcript string) ([]st
 
 	// 結果のパース
 	responseText := resp.Choices[0].Message.Content
-	// 改行で分割してタイトルを取得
+	// Split by newline to get titles
 	titles := strings.Split(strings.TrimSpace(responseText), "\n")
 
-	// 10個のタイトルを確保
+	// Ensure 10 titles
 	result := make([]string, 0, 10)
 	for _, title := range titles {
-		// 空の行をスキップ
+		// Skip empty lines
 		if strings.TrimSpace(title) == "" {
 			continue
 		}
-		// 先頭の番号やハイフン、スペースを除去
+		// Remove leading numbers, hyphens, and spaces
 		title = strings.TrimSpace(title)
-		// 番号が付いている場合は除去
+		// Remove numbering if present
 		if len(title) > 2 && (title[0] >= '0' && title[0] <= '9') && (title[1] == '.' || title[1] == ':' || title[1] == ')') {
 			title = strings.TrimSpace(title[2:])
 		}
@@ -90,7 +90,7 @@ func (s *AIService) GenerateTitles(ctx context.Context, transcript string) ([]st
 		}
 	}
 
-	// 候補が10個に満たない場合はデフォルトのタイトルで補完
+	// Fill with default titles if less than 10 candidates
 	if len(result) < 10 {
 		s.logger.Warnf("Generated only %d titles, filling with default titles", len(result))
 		defaultTitles := []string{
@@ -114,9 +114,9 @@ func (s *AIService) GenerateTitles(ctx context.Context, transcript string) ([]st
 	return result, nil
 }
 
-// GenerateShowNotes はトランスクリプトからShowNote候補を生成する
+// GenerateShowNotes generates show note candidates from a transcript
 func (s *AIService) GenerateShowNotes(ctx context.Context, transcript string) ([]string, error) {
-	// OpenAI APIを使用してShowNote候補を生成
+	// Generate show note candidates using OpenAI API
 	s.logger.Info("Generating show note candidates...")
 
 	// 全文を使用するように変更
@@ -154,29 +154,29 @@ func (s *AIService) GenerateShowNotes(ctx context.Context, transcript string) ([
 	// 結果のパース
 	responseText := resp.Choices[0].Message.Content
 
-	// 常にデフォルトのショーノートフォーマットを使用し、レスポンスからタイトルと要約を抽出
+	// Always use the default show note format and extract title and summary from the response
 	
-	// レスポンスからエピソードの要約を抽出
+	// Extract episode summary from the response
 	summary := responseText
 	
-	// レスポンスが長すぎる場合は最初の数行だけを使用
+	// Use only the first few lines if the response is too long
 	lines := strings.Split(summary, "\n")
 	if len(lines) > 5 {
 		summary = strings.Join(lines[:5], "\n")
 	}
 	
-	// デフォルトのショーノートフォーマット
+	// Default show note format
 	defaultShowNote := fmt.Sprintf("今回のエピソードでは、春休み中の子どもたちのスクリーンタイム管理と外遊びの重要性について話し合いました！📱✨ %s！\n\n🌱 **スクリーンタイムの制限**: YouTube依存やペアレンタルコントロールの導入\n🏃 **外遊びのメリット**: 健康的な遊びと友達とのコミュニケーション\n🎮 **マインクラフトでの交流**: オンラインゲームでつながる子どもたち\n📚 **春休みの学習管理**: デジタルとリアルのバランスを取る方法\n🌟 **子どもの自立を促す**: 適切な制限と自由のバランス\n👪 **家族のコミュニケーション**: デジタル時代の親子の対話\n📲 **デバイス制限の実践例**: 実際に使えるペアレンタルコントロール設定\n🎉 **創造的な遊びの提案**: デジタル以外の選択肢\n\n…………………………………………………………\n\n✨ 📬 フィードバック募集中！\n\nハッシュタグ #momitfm もしくは お便りフォームでのご意見ご感想お待ちしています！📩\n💛 番組のフォローと⭐評価もお願いいたします！\n\n\n…………………………………………………………\n\n✨🎧 Credits\n\n🎤️This Show Hosted by @_yukamiya & @m2vela\n🎶 Intro Crafted by @kirillovlov2983", summary)
 	
-	// 結果を返す
+	// Return the results
 	result := []string{defaultShowNote}
 	
-	// 最大では10個のショーノートを返すようにする
+	// Return up to 10 show notes
 	for i := 1; i < 10; i++ {
 		result = append(result, result[0])
 	}
 
-	// 候補が10個に満たない場合はデフォルトのショーノートで補完
+	// Fill with default show notes if less than 10 candidates
 	if len(result) < 10 {
 		s.logger.Warnf("Generated only %d show notes, filling with default notes", len(result))
 		defaultNotes := []string{
@@ -200,12 +200,12 @@ func (s *AIService) GenerateShowNotes(ctx context.Context, transcript string) ([
 	return result, nil
 }
 
-// GenerateAdTimecodes はトランスクリプトから広告タイムコード候補を生成する
+// GenerateAdTimecodes generates ad timecode candidates from a transcript
 func (s *AIService) GenerateAdTimecodes(ctx context.Context, transcript string) ([][]string, error) {
-	// OpenAI APIを使用して広告タイムコード候補を生成
+	// Generate ad timecode candidates using OpenAI API
 	s.logger.Info("Generating ad timecode candidates...")
 
-	// ダミーデータ（実際の実装では、OpenAI APIを使用）
+	// Dummy data (in actual implementation, use OpenAI API)
 	adTimecodes := [][]string{
 		{"00:05:30", "00:15:45", "00:25:20"},
 		{"00:07:15", "00:18:30", "00:28:10"},

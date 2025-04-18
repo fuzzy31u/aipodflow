@@ -9,25 +9,25 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// InteractiveUI はインタラクティブなユーザーインターフェースを提供する
+// InteractiveUI provides an interactive user interface
 type InteractiveUI struct {
 	logger *logrus.Logger
 }
 
-// NewInteractiveUI は新しいInteractiveUIインスタンスを作成する
+// NewInteractiveUI creates a new InteractiveUI instance
 func NewInteractiveUI(logger *logrus.Logger) *InteractiveUI {
 	return &InteractiveUI{
 		logger: logger,
 	}
 }
 
-// SelectContent はユーザーにコンテンツ候補から選択させる
+// SelectContent allows users to select from content candidates
 func (ui *InteractiveUI) SelectContent(candidates *model.ContentCandidates) (*model.SelectedContent, error) {
 	selected := &model.SelectedContent{}
 
 	ui.logger.Info("Starting interactive selection process...")
 
-	// 1. タイトル選択
+	// 1. Title selection
 	titleIndex := 0
 	titlePrompt := &survey.Select{
 		Message: "Select a title:",
@@ -39,7 +39,7 @@ func (ui *InteractiveUI) SelectContent(candidates *model.ContentCandidates) (*mo
 	selected.Title = candidates.Titles[titleIndex]
 	ui.logger.Infof("Selected title: %s", selected.Title)
 
-	// 2. タイトル編集オプション
+	// 2. Title editing option
 	editTitle := false
 	editPrompt := &survey.Confirm{
 		Message: "Would you like to edit the selected title?",
@@ -61,7 +61,7 @@ func (ui *InteractiveUI) SelectContent(candidates *model.ContentCandidates) (*mo
 		ui.logger.Infof("Edited title: %s", selected.Title)
 	}
 
-	// 3. ShowNote選択
+	// 3. ShowNote selection
 	showNoteIndex := 0
 	showNotePrompt := &survey.Select{
 		Message: "Select show notes:",
@@ -73,7 +73,7 @@ func (ui *InteractiveUI) SelectContent(candidates *model.ContentCandidates) (*mo
 	selected.ShowNote = candidates.ShowNotes[showNoteIndex]
 	ui.logger.Info("Selected show notes")
 
-	// 4. ShowNote編集オプション
+	// 4. ShowNote editing option
 	editShowNote := false
 	editShowNotePrompt := &survey.Confirm{
 		Message: "Would you like to edit the selected show notes?",
@@ -97,7 +97,7 @@ func (ui *InteractiveUI) SelectContent(candidates *model.ContentCandidates) (*mo
 		ui.logger.Info("Edited show notes")
 	}
 
-	// 5. 広告タイムコード選択
+	// 5. Ad timecode selection
 	adIndex := 0
 	adPrompt := &survey.Select{
 		Message: "Select ad placement timecodes:",
@@ -109,7 +109,7 @@ func (ui *InteractiveUI) SelectContent(candidates *model.ContentCandidates) (*mo
 	selected.AdTimecodes = candidates.AdTimecodes[adIndex]
 	ui.logger.Infof("Selected ad timecodes: %v", selected.AdTimecodes)
 
-	// 6. 最終確認
+	// 6. Final confirmation
 	confirm := false
 	confirmPrompt := &survey.Confirm{
 		Message: "Do you want to proceed with these selections?",
@@ -127,7 +127,7 @@ func (ui *InteractiveUI) SelectContent(candidates *model.ContentCandidates) (*mo
 	return selected, nil
 }
 
-// formatTitleOptions はタイトル候補を表示用にフォーマットする
+// formatTitleOptions formats title candidates for display
 func formatTitleOptions(titles []string) []string {
 	options := make([]string, len(titles))
 	for i, title := range titles {
@@ -136,7 +136,7 @@ func formatTitleOptions(titles []string) []string {
 	return options
 }
 
-// formatShowNoteOptions はShowNote候補を表示用にフォーマットする
+// formatShowNoteOptions formats ShowNote candidates for display
 func formatShowNoteOptions(showNotes []string) []string {
 	options := make([]string, len(showNotes))
 	for i, note := range showNotes {
@@ -149,7 +149,7 @@ func formatShowNoteOptions(showNotes []string) []string {
 	return options
 }
 
-// formatAdOptions は広告タイムコード候補を表示用にフォーマットする
+// formatAdOptions formats ad timecode candidates for display
 func formatAdOptions(adTimecodes [][]string) []string {
 	options := make([]string, len(adTimecodes))
 	for i, timecodes := range adTimecodes {

@@ -9,13 +9,13 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// Art19Processor はArt19へのアップロード処理を担当する
+// Art19Processor is responsible for uploading content to Art19
 type Art19Processor struct {
 	art19Service *services.Art19Service
 	logger       *logrus.Logger
 }
 
-// NewArt19Processor は新しいArt19Processorインスタンスを作成する
+// NewArt19Processor creates a new Art19Processor instance
 func NewArt19Processor(art19Service *services.Art19Service, logger *logrus.Logger) *Art19Processor {
 	return &Art19Processor{
 		art19Service: art19Service,
@@ -23,9 +23,9 @@ func NewArt19Processor(art19Service *services.Art19Service, logger *logrus.Logge
 	}
 }
 
-// UploadDraft は選択されたコンテンツをArt19にドラフトとしてアップロードする
+// UploadDraft uploads the selected content to Art19 as a draft
 func (p *Art19Processor) UploadDraft(ctx context.Context, audioPath string, content *model.SelectedContent) error {
-	// 音声ファイルが指定されていない場合はアップロードをスキップ
+	// Skip upload if no audio file is specified
 	if audioPath == "" {
 		p.logger.Info("No audio file specified, skipping Art19 upload")
 		p.logger.Infof("Selected content would be uploaded: Title=%s, ShowNotes=[content omitted]", content.Title)
@@ -36,10 +36,10 @@ func (p *Art19Processor) UploadDraft(ctx context.Context, audioPath string, cont
 	p.logger.Info("Show Notes: [content omitted for brevity]")
 	p.logger.Infof("Ad Timecodes: %v", content.AdTimecodes)
 	
-	// 音声ファイルの存在確認
+	// Verify the audio file exists
 	p.logger.Infof("Checking audio file: %s", audioPath)
 	
-	// Art19へのアップロード
+	// Upload to Art19
 	p.logger.Info("Uploading to Art19 as draft...")
 	err := p.art19Service.PublishEpisode(ctx, audioPath, content.Title, content.ShowNote)
 	if err != nil {
