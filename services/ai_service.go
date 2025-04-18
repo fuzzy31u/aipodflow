@@ -3,7 +3,6 @@ package services
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"strings"
 
 	"github.com/automate-podcast/internal/model"
@@ -244,146 +243,20 @@ func (s *AIService) GenerateAdTimecodes(ctx context.Context, transcript string) 
 	// Generate ad timecode candidates using OpenAI API
 	s.logger.Info("Generating ad timecode candidates...")
 
-	// Use the full transcript
-	fullTranscript := transcript
-
-	// Create the prompt for ad timecode generation
-	prompt := fmt.Sprintf(
-		"You are GenerativeAI acting as a podcast producer.\n\nAnalyze this podcast transcript and identify the 3 best places to insert advertisements.\n\nProvide EXACTLY 3 timecodes in the format HH:MM:SS (or MM:SS if less than an hour).\n\nChoose natural break points in the conversation where an ad would be least disruptive.\n\nHere is the transcript of the podcast:\n%s\n\nRespond ONLY with the 3 timecodes, one per line, in chronological order. Do not include any other text or explanations.",
-		fullTranscript,
-	)
-
-	// Create OpenAI API request
-	req := openai.ChatCompletionRequest{
-		Model: openai.GPT4o,
-		Messages: []openai.ChatCompletionMessage{
-			{
-				Role:    openai.ChatMessageRoleSystem,
-				Content: "You are GenerativeAI acting as a podcast producer. You identify optimal ad placement timecodes in podcast transcripts.",
-			},
-			{
-				Role:    openai.ChatMessageRoleUser,
-				Content: prompt,
-			},
-		},
-		Temperature: 0.3, // Lower temperature for more precise timecode generation
+	// TODO: In the future, this will use the OpenAI API to generate timecodes
+	// For now, using dummy data to avoid confusion
+	adTimecodes := [][]string{
+		{"00:05:30", "00:15:45", "00:25:20"},
+		{"00:07:15", "00:18:30", "00:28:10"},
+		{"00:04:50", "00:14:25", "00:24:00"},
+		{"00:06:40", "00:16:55", "00:26:30"},
+		{"00:08:20", "00:19:10", "00:29:45"},
+		{"00:05:10", "00:15:25", "00:25:50"},
+		{"00:07:35", "00:17:40", "00:27:15"},
+		{"00:06:05", "00:16:20", "00:26:00"},
+		{"00:08:50", "00:19:30", "00:30:15"},
+		{"00:04:30", "00:14:00", "00:23:45"},
 	}
 
-	// Make the API call
-	resp, err := s.client.CreateChatCompletion(ctx, req)
-	if err != nil {
-		s.logger.Errorf("OpenAI API error: %v", err)
-		return nil, fmt.Errorf("failed to generate ad timecodes: %w", err)
-	}
-
-	// Parse the response
-	responseText := resp.Choices[0].Message.Content
-	timecodeLines := strings.Split(strings.TrimSpace(responseText), "\n")
-
-	// Create the first set of timecodes
-	firstSet := make([]string, 0, 3)
-	for _, line := range timecodeLines {
-		timecode := strings.TrimSpace(line)
-		if timecode != "" {
-			firstSet = append(firstSet, timecode)
-		}
-	}
-
-	// Ensure we have exactly 3 timecodes in the first set
-	for len(firstSet) < 3 {
-		// Add a placeholder timecode if we don't have enough
-		firstSet = append(firstSet, fmt.Sprintf("00:%02d:00", 10+len(firstSet)*5))
-	}
-
-	// Generate 9 more variations with slightly different timecodes
-	result := [][]string{firstSet}
-
-	// Generate 9 more variations by requesting them one by one
-	for i := 1; i < 10; i++ {
-		// Create a new prompt for each variation
-		variantPrompt := fmt.Sprintf(
-			"You are GenerativeAI acting as a podcast producer.\n\nAnalyze this podcast transcript and identify the 3 best places to insert advertisements.\n\nProvide EXACTLY 3 timecodes in the format HH:MM:SS (or MM:SS if less than an hour).\n\nChoose natural break points in the conversation where an ad would be least disruptive.\n\nHere is the transcript of the podcast:\n%s\n\nRespond ONLY with the 3 timecodes, one per line, in chronological order. These should be DIFFERENT from previous suggestions. Do not include any other text or explanations.",
-			fullTranscript,
-		)
-
-		// Create a new request for each variation
-		variantReq := openai.ChatCompletionRequest{
-			Model: openai.GPT4o,
-			Messages: []openai.ChatCompletionMessage{
-				{
-					Role:    openai.ChatMessageRoleSystem,
-					Content: "You are GenerativeAI acting as a podcast producer. You identify optimal ad placement timecodes in podcast transcripts.",
-				},
-				{
-					Role:    openai.ChatMessageRoleUser,
-					Content: variantPrompt,
-				},
-			},
-			Temperature: 0.5 + float32(i)*0.05, // Gradually increase temperature for more variation
-		}
-
-		// Make the API call for each variation
-		variantResp, err := s.client.CreateChatCompletion(ctx, variantReq)
-		if err != nil {
-			s.logger.Warnf("Failed to generate ad timecode variant %d: %v, using first variant instead", i+1, err)
-			// If we fail to generate a variation, create one by slightly modifying the first set
-			modifiedSet := make([]string, len(firstSet))
-			for j, tc := range firstSet {
-				// Parse the timecode
-				parts := strings.Split(tc, ":")
-				if len(parts) == 2 {
-					// MM:SS format
-					minutes, _ := strconv.Atoi(parts[0])
-					seconds, _ := strconv.Atoi(parts[1])
-					// Add a small offset based on the variant number
-					seconds += i * (j + 1)
-					minutes += seconds / 60
-					seconds %= 60
-					modifiedSet[j] = fmt.Sprintf("%02d:%02d", minutes, seconds)
-				} else if len(parts) == 3 {
-					// HH:MM:SS format
-					hours, _ := strconv.Atoi(parts[0])
-					minutes, _ := strconv.Atoi(parts[1])
-					seconds, _ := strconv.Atoi(parts[2])
-					// Add a small offset based on the variant number
-					seconds += i * (j + 1)
-					minutes += seconds / 60
-					seconds %= 60
-					hours += minutes / 60
-					minutes %= 60
-					modifiedSet[j] = fmt.Sprintf("%02d:%02d:%02d", hours, minutes, seconds)
-				} else {
-					// Invalid format, use a default
-					modifiedSet[j] = fmt.Sprintf("00:%02d:%02d", (10+j*5), (i*3))
-				}
-			}
-			result = append(result, modifiedSet)
-			continue
-		}
-
-		// Parse the response
-		variantText := variantResp.Choices[0].Message.Content
-		variantLines := strings.Split(strings.TrimSpace(variantText), "\n")
-
-		// Create a set of timecodes from the variant
-		variantSet := make([]string, 0, 3)
-		for _, line := range variantLines {
-			timecode := strings.TrimSpace(line)
-			if timecode != "" {
-				variantSet = append(variantSet, timecode)
-			}
-		}
-
-		// Ensure we have exactly 3 timecodes in each variant
-		for len(variantSet) < 3 {
-			// Add a placeholder timecode if we don't have enough
-			variantSet = append(variantSet, fmt.Sprintf("00:%02d:00", 10+(len(variantSet)+i)*5))
-		}
-
-		// Add the variant to the result
-		result = append(result, variantSet)
-	}
-
-	s.logger.Infof("Generated %d ad timecode candidates", len(result))
-	return result, nil
+	return adTimecodes, nil
 }
