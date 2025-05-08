@@ -3,6 +3,7 @@ package processor
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/automate-podcast/internal/model"
 	"github.com/automate-podcast/services"
@@ -24,8 +25,9 @@ func NewContentProcessor(aiService *services.AIService, logger *logrus.Logger) *
 }
 
 // GenerateCandidates generates content candidates from a transcript
-func (p *ContentProcessor) GenerateCandidates(transcript string) (*model.ContentCandidates, error) {
+func (p *ContentProcessor) GenerateCandidates(transcript string, generateShowNotes, generateAdTimecodes bool) (*model.ContentCandidates, error) {
 	ctx := context.Background()
+	result := &model.ContentCandidates{}
 
 	p.logger.Info("Starting content generation process...")
 
@@ -36,26 +38,53 @@ func (p *ContentProcessor) GenerateCandidates(transcript string) (*model.Content
 		return nil, fmt.Errorf("failed to generate titles: %w", err)
 	}
 	p.logger.Infof("Generated %d title candidates", len(titles))
+	result.Titles = titles
 
-	// 2. Generate show note candidates
-	p.logger.Info("Generating show note candidates...")
-	showNotes, err := p.aiService.GenerateShowNotes(ctx, transcript)
-	if err != nil {
-		return nil, fmt.Errorf("failed to generate show notes: %w", err)
+	// If we only need titles, return early
+	if !generateShowNotes && !generateAdTimecodes {
+		return result, nil
 	}
-	p.logger.Infof("Generated %d show note candidates", len(showNotes))
+
+	// Add a delay to avoid hitting rate limits
+	if generateShowNotes {
+		p.logger.Info("Waiting 5 seconds before generating show notes to avoid rate limits...")
+		time.Sleep(5 * time.Second)
+
+		// 2. Generate show note candidates
+		p.logger.Info("Generating show note candidates...")
+		showNotes, err := p.aiService.GenerateShowNotes(ctx, transcript)
+		if err != nil {
+			p.logger.Warnf("Failed to generate show notes: %v", err)
+			// Continue with empty show notes instead of failing
+			result.ShowNotes = []string{}
+		} else {
+			p.logger.Infof("Generated %d show note candidates", len(showNotes))
+			result.ShowNotes = showNotes
+		}
+	} else {
+		result.ShowNotes = []string{}
+	}
+
+	// If we don't need ad timecodes, return early
+	if !generateAdTimecodes {
+		return result, nil
+	}
+
+	// Add another delay before generating ad timecodes
+	p.logger.Info("Waiting 5 seconds before generating ad timecodes to avoid rate limits...")
+	time.Sleep(5 * time.Second)
 
 	// 3. Generate ad timecode candidates
 	p.logger.Info("Generating ad timecode candidates...")
 	adTimecodes, err := p.aiService.GenerateAdTimecodes(ctx, transcript)
 	if err != nil {
-		return nil, fmt.Errorf("failed to generate ad timecodes: %w", err)
+		p.logger.Warnf("Failed to generate ad timecodes: %v", err)
+		// Continue with empty ad timecodes instead of failing
+		result.AdTimecodes = [][]string{}
+	} else {
+		p.logger.Infof("Generated %d ad timecode candidates", len(adTimecodes))
+		result.AdTimecodes = adTimecodes
 	}
-	p.logger.Infof("Generated %d ad timecode candidates", len(adTimecodes))
 
-	return &model.ContentCandidates{
-		Titles:      titles,
-		ShowNotes:   showNotes,
-		AdTimecodes: adTimecodes,
-	}, nil
+	return result, nil
 }

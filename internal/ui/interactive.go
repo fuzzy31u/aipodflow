@@ -27,17 +27,14 @@ func (ui *InteractiveUI) SelectContent(candidates *model.ContentCandidates) (*mo
 
 	ui.logger.Info("Starting interactive selection process...")
 
-	// 1. Title selection
-	titleIndex := 0
-	titlePrompt := &survey.Select{
-		Message: "Select a title:",
-		Options: formatTitleOptions(candidates.Titles),
+	// 1. Title proposal
+	if len(candidates.Titles) > 0 {
+		selected.Title = candidates.Titles[0]
+		ui.logger.Infof("Proposed title: %s", selected.Title)
+	} else {
+		ui.logger.Warn("No title proposal available")
+		selected.Title = ""
 	}
-	if err := survey.AskOne(titlePrompt, &titleIndex); err != nil {
-		return nil, fmt.Errorf("title selection failed: %w", err)
-	}
-	selected.Title = candidates.Titles[titleIndex]
-	ui.logger.Infof("Selected title: %s", selected.Title)
 
 	// 2. Title editing option
 	editTitle := false
@@ -61,17 +58,14 @@ func (ui *InteractiveUI) SelectContent(candidates *model.ContentCandidates) (*mo
 		ui.logger.Infof("Edited title: %s", selected.Title)
 	}
 
-	// 3. ShowNote selection
-	showNoteIndex := 0
-	showNotePrompt := &survey.Select{
-		Message: "Select show notes:",
-		Options: formatShowNoteOptions(candidates.ShowNotes),
+	// 3. Show note proposal
+	if len(candidates.ShowNotes) > 0 {
+		selected.ShowNote = candidates.ShowNotes[0]
+		ui.logger.Info("Proposed show note")
+	} else {
+		ui.logger.Warn("No show note proposal available")
+		selected.ShowNote = ""
 	}
-	if err := survey.AskOne(showNotePrompt, &showNoteIndex); err != nil {
-		return nil, fmt.Errorf("show note selection failed: %w", err)
-	}
-	selected.ShowNote = candidates.ShowNotes[showNoteIndex]
-	ui.logger.Info("Selected show notes")
 
 	// 4. ShowNote editing option
 	editShowNote := false

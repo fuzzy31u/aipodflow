@@ -37,7 +37,7 @@ func (s *AIService) GenerateTitles(ctx context.Context, transcript string) ([]st
 
 	// プロンプトの作成
 	prompt := fmt.Sprintf(
-		"You are GenerativeAI acting as a podcast copy‑writer.\nGenerate:\n1. Title – follow the pattern:\n  NN. ＜Japanese topic 1＞ / ＜Japanese topic 2＞ [/ ＜Japanese topic 3＞]\n  • NN = episode number (integer).\n  • Provide 2 or 3 topics.\n  • Topics should be mainly in Japanese, but keep any necessary English words as‑is (AI, GPT, etc.).\n\nHere is the transcript of the podcast:\n%s\n\nPlease generate 10 unique title candidates, each on a new line. Do not include numbers or symbols at the beginning of each line.",
+		"You are GenerativeAI acting as a podcast copy‑writer.\nGenerate:\n1. Title – follow the pattern:\n  NN. ＜Japanese topic 1＞ / ＜Japanese topic 2＞ [/ ＜Japanese topic 3＞]\n  • NN = episode number (integer).\n  • Provide 2 or 3 topics.\n  • Topics should be mainly in Japanese, but keep any necessary English words as‑is (AI, GPT, etc.).\n\nHere is the transcript of the podcast:\n%s\n\nPlease generate just ONE optimal title following the pattern. Do not include numbers or symbols at the beginning of the line.",
 		fullTranscript,
 	)
 
@@ -84,17 +84,15 @@ func (s *AIService) GenerateTitles(ctx context.Context, transcript string) ([]st
 		}
 	}
 
-	// If we don't have enough titles, generate more by making additional API calls
-	if len(result) < 10 {
-		s.logger.Info("Generated fewer than 10 titles, requesting additional titles")
-		
+	// 結果が空の場合は再度生成を試みる
+	if len(result) < 1 {
+		s.logger.Info("Failed to generate a title, trying again")
 		// Create a new prompt requesting more titles
-		additionalPrompt := fmt.Sprintf(
-			"You are GenerativeAI acting as a podcast copy‑writer.\nGenerate:\n1. Title – follow the pattern:\n  NN. ＜Japanese topic 1＞ / ＜Japanese topic 2＞ [/ ＜Japanese topic 3＞]\n  • NN = episode number (integer).\n  • Provide 2 or 3 topics.\n  • Topics should be mainly in Japanese, but keep any necessary English words as‑is (AI, GPT, etc.).\n\nHere is the transcript of the podcast:\n%s\n\nPlease generate %d MORE unique title candidates, each on a new line. These should be DIFFERENT from your previous suggestions. Do not include numbers or symbols at the beginning of each line.",
+		systemPrompt := fmt.Sprintf(
+			"You are GenerativeAI acting as a podcast copy‑writer.\nGenerate:\n1. Title – follow the pattern:\n  NN. ＜Japanese topic 1＞ / ＜Japanese topic 2＞ [/ ＜Japanese topic 3＞]\n  • NN = episode number (integer).\n  • Provide 2 or 3 topics.\n  • Topics should be mainly in Japanese, but keep any necessary English words as‑is (AI, GPT, etc.).\n\nHere is the transcript of the podcast:\n%s\n\nPlease generate just ONE optimal title following the pattern. Do not include numbers or symbols at the beginning of the line.",
 			fullTranscript,
-			10 - len(result),
 		)
-		
+
 		// Create a new request for additional titles
 		additionalReq := openai.ChatCompletionRequest{
 			Model: openai.GPT4o,
@@ -105,38 +103,30 @@ func (s *AIService) GenerateTitles(ctx context.Context, transcript string) ([]st
 				},
 				{
 					Role:    openai.ChatMessageRoleUser,
-					Content: additionalPrompt,
+					Content: systemPrompt,
 				},
 			},
 			Temperature: 0.8, // Slightly higher temperature for more variation
 			MaxTokens:   2000,
 		}
-		
+
 		// Make the API call for additional titles
 		additionalResp, err := s.client.CreateChatCompletion(ctx, additionalReq)
 		if err != nil {
-			s.logger.Warnf("Failed to generate additional titles: %v", err)
+			s.logger.Warnf("Failed to generate additional title: %v", err)
 		} else {
 			// Process additional titles
 			additionalText := additionalResp.Choices[0].Message.Content
 			additionalTitles := strings.Split(strings.TrimSpace(additionalText), "\n")
-			
+
 			for _, title := range additionalTitles {
 				if strings.TrimSpace(title) == "" {
 					continue
 				}
 				result = append(result, strings.TrimSpace(title))
-				if len(result) >= 10 {
+				if len(result) >= 1 {
 					break
 				}
-			}
-		}
-		
-		// If we still don't have 10 titles, duplicate the ones we have
-		if len(result) < 10 {
-			s.logger.Warnf("Still only generated %d titles, duplicating existing ones", len(result))
-			for i := len(result); i < 10; i++ {
-				result = append(result, result[i % len(result)])
 			}
 		}
 	}
@@ -187,51 +177,9 @@ func (s *AIService) GenerateShowNotes(ctx context.Context, transcript string) ([
 
 	// Use the complete LLM-generated show note without modifications
 	result := []string{responseText}
-	
-	// Generate 9 more variations by requesting them one by one
-	for i := 1; i < 10; i++ {
-		// Create a new prompt for each variation
-		variantPrompt := fmt.Sprintf(
-			"You are GenerativeAI acting as a podcast copy‑writer for a Japanese podcast about parenting and technology.\n\nGenerate a DIFFERENT show note with EXACTLY this format:\n\n1. Opening summary: 2-3 lines in friendly Japanese with many relevant emojis. EVERY sentence MUST end with an exclamation mark (!).\n\n2. Bullet points: 8-12 points, each formatted as:\n   [emoji] [Bold headline in Japanese]: [Short description, maximum 1 line]\n\n3. CTA block: Wrapped in dotted lines (\"\u2026\u2026\u2026\"), asking for feedback via hashtag #momitfm and encouraging follows/ratings\n\n4. Credits section: Must be titled exactly \"✨🎧 Credits\" and list hosts (@_yukamiya & @m2vela) and intro creator (@kirillovlov2983)\n\nThe show note MUST maintain an energetic, conversational tone balancing parenting and tech themes.\n\nHere is the transcript of the podcast:\n%s\n\nThis should be DIFFERENT from your previous response. Generate EXACTLY ONE complete show note following ALL formatting requirements above.",
-			fullTranscript,
-		)
-		
-		// Create a new request for each variation
-		variantReq := openai.ChatCompletionRequest{
-			Model: openai.GPT4o,
-			Messages: []openai.ChatCompletionMessage{
-				{
-					Role:    openai.ChatMessageRoleSystem,
-					Content: "You are GenerativeAI acting as a podcast copy‑writer for a Japanese podcast about parenting and technology. Follow the formatting instructions EXACTLY. Include emojis, proper bullet points, and all required sections.",
-				},
-				{
-					Role:    openai.ChatMessageRoleUser,
-					Content: variantPrompt,
-				},
-			},
-			Temperature: 0.8, // Slightly higher temperature for more variation
-		}
-		
-		// Make the API call for each variation
-		variantResp, err := s.client.CreateChatCompletion(ctx, variantReq)
-		if err != nil {
-			s.logger.Warnf("Failed to generate show note variant %d: %v, using first variant instead", i+1, err)
-			result = append(result, result[0])
-			continue
-		}
-		
-		// Add the complete response to results
-		result = append(result, variantResp.Choices[0].Message.Content)
-	}
 
-	// If we couldn't generate 10 unique show notes, log a warning
-	if len(result) < 10 {
-		s.logger.Warnf("Generated only %d show notes, some may be duplicates", len(result))
-		// Fill remaining slots with the first result if needed
-		for i := len(result); i < 10; i++ {
-			result = append(result, result[0])
-		}
-	}
+	// Log the generated show note
+	s.logger.Info("Generated show note proposal")
 
 	s.logger.Infof("Generated %d show note candidates", len(result))
 	return result, nil

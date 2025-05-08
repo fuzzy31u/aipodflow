@@ -22,6 +22,9 @@ func NewProcessCmd() *cobra.Command {
 	var outputDir string
 	var verbose bool
 	var nonInteractive bool
+	var titlesOnly bool
+	var generateShowNotes bool
+	var generateAdTimecodes bool
 
 	processCmd := &cobra.Command{
 		Use:   "process-transcript",
@@ -69,8 +72,18 @@ func NewProcessCmd() *cobra.Command {
 
 			// 4. AI generation process
 			logger.Info("Starting content generation...")
-			// Changed to include instructions directly in the prompt instead of using sample references
-			candidates, err := contentProcessor.GenerateCandidates(transcript)
+			// Determine what to generate based on flags
+			genShownotes := generateShowNotes
+			genAdTimecodes := generateAdTimecodes
+			
+			// If titles-only is set, override other flags
+			if titlesOnly {
+				genShownotes = false
+				genAdTimecodes = false
+			}
+			
+			// Generate content
+			candidates, err := contentProcessor.GenerateCandidates(transcript, genShownotes, genAdTimecodes)
 			if err != nil {
 				return fmt.Errorf("content generation failed: %w", err)
 			}
@@ -157,8 +170,11 @@ func NewProcessCmd() *cobra.Command {
 	processCmd.Flags().StringVarP(&inputTranscript, "input-transcript", "t", "", "Path to transcript file (required)")
 	processCmd.Flags().StringVarP(&inputAudio, "input-audio", "a", "", "Path to audio file (required)")
 	processCmd.Flags().StringVarP(&outputDir, "output-dir", "o", "", "Output directory for generated files")
-	processCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "Enable verbose logging")
 	processCmd.Flags().BoolVarP(&nonInteractive, "non-interactive", "n", false, "Run in non-interactive mode (auto-select first candidates)")
+	processCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "Enable verbose logging")
+	processCmd.Flags().BoolVar(&titlesOnly, "titles-only", false, "Generate only titles, skip show notes and ad timecodes")
+	processCmd.Flags().BoolVar(&generateShowNotes, "gen-shownotes", true, "Generate show notes (default: true)")
+	processCmd.Flags().BoolVar(&generateAdTimecodes, "gen-adtimecodes", true, "Generate ad timecodes (default: true)")
 
 	// Set required flags
 	if err := processCmd.MarkFlagRequired("input-transcript"); err != nil {
