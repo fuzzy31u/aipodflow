@@ -161,7 +161,9 @@ func NewProcessCmd() *cobra.Command {
 	processCmd.Flags().BoolVarP(&nonInteractive, "non-interactive", "n", false, "Run in non-interactive mode (auto-select first candidates)")
 
 	// Set required flags
-	processCmd.MarkFlagRequired("input-transcript")
+	if err := processCmd.MarkFlagRequired("input-transcript"); err != nil {
+		fmt.Fprintf(os.Stderr, "Error marking flag as required: %v\n", err)
+	}
 	// Audio file is optional (only required for Art19 upload)
 
 	return processCmd
