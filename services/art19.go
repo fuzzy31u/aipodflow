@@ -1,8 +1,12 @@
 package services
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 
 	"github.com/sirupsen/logrus"
@@ -13,6 +17,46 @@ type Art19Service struct {
 	username string
 	password string
 	logger   *logrus.Logger
+}
+
+// UploadDraftTitle uploads only the title to Art19 as a draft (placeholder implementation)
+func (s *Art19Service) UploadDraftTitle(ctx context.Context, title string) error {
+	s.logger.Infof("Uploading draft title to Art19: %s", title)
+
+	// 必要なURL等は設定や引数で受け取る想定
+	art19EpisodeNewURL := os.Getenv("ART19_EPISODE_NEW_URL")
+	if art19EpisodeNewURL == "" {
+		return fmt.Errorf("ART19_EPISODE_NEW_URL is not set")
+	}
+
+	// Playwright MCPサーバーにPOST
+	payload := map[string]interface{}{
+		"script": "scripts/art19_upload_title.js",
+		"env": map[string]string{
+			"ART19_USERNAME": s.username,
+			"ART19_PASSWORD": s.password,
+			"ART19_EPISODE_NEW_URL": art19EpisodeNewURL,
+			"EPISODE_TITLE":  title,
+		},
+	}
+	data, err := json.Marshal(payload)
+	if err != nil {
+		return fmt.Errorf("failed to marshal Playwright payload: %w", err)
+	}
+
+	resp, err := http.Post("http://localhost:3001/run-script", "application/json", bytes.NewBuffer(data)) // 例: MCPサーバーは3001番
+	if err != nil {
+		return fmt.Errorf("failed to call Playwright MCP server: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("Playwright MCP server error: %s", string(body))
+	}
+
+	s.logger.Info("Draft title upload requested via Playwright MCP server")
+	return nil
 }
 
 // NewArt19Service creates a new Art19Service instance

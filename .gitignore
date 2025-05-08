@@ -35,6 +35,34 @@ go.work
 .Spotlight-V100
 .Trashes
 ehthumbs.db
+
+# Node.js dependencies
+node_modules/
+
+# Build artifacts and CLI binaries
+cmd/podcast-cli/podcast-cli
+
+# Debug and temp files
+art19_login_page.html
+art19_modal_inputs_debug.json
+art19_title_input_debug.html
+art19_update_close_debug.html
+
+# Editor/session files
+.cursor/
+.windsurfrules
+
+# Catch-all for other temp/debug files
+*.log
+*.tmp
+*.bak
+
+# Scripts directory should be tracked!
+!scripts/
+
+# Package files (tracked)
+!package.json
+!package-lock.json
 Thumbs.db
 
 # Application specific

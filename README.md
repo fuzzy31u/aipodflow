@@ -15,13 +15,18 @@ AIPodFlow is an open-source CLI tool that leverages AI to streamline podcast pro
 - **Interactive Selection**: Choose the best content from multiple AI-generated candidates
 - **Non-interactive Mode**: Automatically select content for batch processing
 - **Art19 Integration**: Seamlessly upload content to Art19 podcast hosting platform
+- **PlayWright MCP Integration**: Automate browser-based workflows for podcast management and uploading
+- **PlayWright-based Upload to Art19**: Upload podcast episodes to the Art19 platform using PlayWright automation
 - **Complete LLM Content**: Ensures all LLM-generated content is preserved without omissions
+- **Vercel Integration**: Automate website updates when new episodes are published
+- **Social Media Support**: Generate content for Twitter/X posts
 
 ## 📋 Requirements
 
 - Go 1.21 or higher
 - OpenAI API key
-- Art19 credentials (optional, for publishing)
+- Art19 credentials (for publishing)
+- PlayWright (Node.js, npm required) for browser automation features
 
 ## 🔧 Installation
 
@@ -73,6 +78,23 @@ art19_password: "your_art19_password"
 ./podcast-cli process-transcript --input-transcript /path/to/transcript.txt --verbose
 ```
 
+### Upload to Art19 with PlayWright MCP
+
+PlayWright MCP enables automated uploading of episodes to the Art19 platform using browser automation. Make sure you have Node.js and PlayWright installed:
+
+```bash
+npm install -g playwright
+playwright install
+```
+
+To upload an episode to Art19 via PlayWright MCP:
+
+```bash
+node scripts/art19_upload_title.js --audio /path/to/audio.mp3 --title "Episode Title" --show-notes /path/to/shownotes.txt
+```
+
+This script will launch a browser, log in to Art19, and upload your episode automatically.
+
 ### Command Options
 
 ```
@@ -88,6 +110,18 @@ Flags:
   -v, --verbose                   Enable verbose logging
 ```
 
+## 🤖 PlayWright MCP & Art19 Upload
+
+### What is PlayWright MCP?
+PlayWright MCP (Multi-Channel Publisher) is a Node.js-based automation tool that uses PlayWright to perform browser operations for podcast management. In AIPodFlow, it is used to automate the process of uploading podcast episodes and metadata to the Art19 platform, reducing manual steps and improving reliability.
+
+### How It Works
+- Automates browser actions for logging in, filling forms, and uploading files to Art19
+- Can be extended to support other platforms with similar workflows
+
+### Usage Example
+See the [Usage](#usage) section above for a sample command.
+
 ## 🏗️ Architecture
 
 AIPodFlow is built with a modular architecture:
@@ -97,6 +131,14 @@ AIPodFlow is built with a modular architecture:
 - **Service Layer**: Integrates with external APIs (OpenAI, Art19)
 - **UI Layer**: Provides interactive selection interface
 - **Model Layer**: Defines data structures for content processing
+
+### Integrations
+
+- OpenAI API for content generation
+- Various podcast hosting platforms (Art19, Spotify, etc.)
+- PlayWright for browser-based automation (Art19 upload)
+- Vercel for website deployment
+- Twitter/X API for social media distribution
 
 ### Key Components
 
