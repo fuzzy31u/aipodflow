@@ -24,7 +24,6 @@ func NewProcessCmd() *cobra.Command {
 	var nonInteractive bool
 	var titlesOnly bool
 	var generateShowNotes bool
-	var generateAdTimecodes bool
 
 	processCmd := &cobra.Command{
 		Use:   "process-transcript",
@@ -74,16 +73,14 @@ func NewProcessCmd() *cobra.Command {
 			logger.Info("Starting content generation...")
 			// Determine what to generate based on flags
 			genShownotes := generateShowNotes
-			genAdTimecodes := generateAdTimecodes
-			
+	
 			// If titles-only is set, override other flags
 			if titlesOnly {
 				genShownotes = false
-				genAdTimecodes = false
 			}
-			
+	
 			// Generate content
-			candidates, err := contentProcessor.GenerateCandidates(transcript, genShownotes, genAdTimecodes)
+			candidates, err := contentProcessor.GenerateCandidates(transcript, genShownotes)
 			if err != nil {
 				return fmt.Errorf("content generation failed: %w", err)
 			}
@@ -98,7 +95,6 @@ func NewProcessCmd() *cobra.Command {
 				selectedContent = &model.SelectedContent{
 					Title:       candidates.Titles[0],
 					ShowNote:    candidates.ShowNotes[0],
-					AdTimecodes: candidates.AdTimecodes[0],
 				}
 
 				// Output all candidates to file
@@ -114,10 +110,7 @@ func NewProcessCmd() *cobra.Command {
 						content += fmt.Sprintf("%d:\n%s\n\n", i+1, note)
 					}
 
-					content += "\n=== Ad Timecode Candidates ===\n"
-					for i, timecodes := range candidates.AdTimecodes {
-						content += fmt.Sprintf("%d: %v\n", i+1, timecodes)
-					}
+					// Ad timecode section removed
 
 					if err := os.WriteFile(allCandidatesPath, []byte(content), 0644); err != nil {
 						logger.Warnf("Failed to save all candidates to file: %v", err)
@@ -144,8 +137,8 @@ func NewProcessCmd() *cobra.Command {
 				outputPath := filepath.Join(outputDir, sanitizedTitle+".txt")
 
 				// Save content
-				content := fmt.Sprintf("Title: %s\n\nShow Notes:\n%s\n\nAd Timecodes: %v\n",
-					selectedContent.Title, selectedContent.ShowNote, selectedContent.AdTimecodes)
+				content := fmt.Sprintf("=== Selected Content ===\nTitle: %s\n\nShow Notes:\n%s",
+					selectedContent.Title, selectedContent.ShowNote)
 
 				if err := os.WriteFile(outputPath, []byte(content), 0644); err != nil {
 					logger.Warnf("Failed to save selection to file: %v", err)
@@ -172,9 +165,8 @@ func NewProcessCmd() *cobra.Command {
 	processCmd.Flags().StringVarP(&outputDir, "output-dir", "o", "", "Output directory for generated files")
 	processCmd.Flags().BoolVarP(&nonInteractive, "non-interactive", "n", false, "Run in non-interactive mode (auto-select first candidates)")
 	processCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "Enable verbose logging")
-	processCmd.Flags().BoolVar(&titlesOnly, "titles-only", false, "Generate only titles, skip show notes and ad timecodes")
+	processCmd.Flags().BoolVar(&titlesOnly, "titles-only", false, "Generate only titles, skip show notes")
 	processCmd.Flags().BoolVar(&generateShowNotes, "gen-shownotes", true, "Generate show notes (default: true)")
-	processCmd.Flags().BoolVar(&generateAdTimecodes, "gen-adtimecodes", true, "Generate ad timecodes (default: true)")
 
 	// Set required flags
 	if err := processCmd.MarkFlagRequired("input-transcript"); err != nil {

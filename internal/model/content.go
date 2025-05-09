@@ -4,12 +4,10 @@ package model
 type ContentCandidates struct {
 	Titles      []string   // Title proposal (single optimal title)
 	ShowNotes   []string   // ShowNote proposal (single optimal show note)
-	AdTimecodes [][]string // Ad timecode candidates (10 patterns)
 }
 
 // SelectedContent is a struct that holds content selected by the user
 type SelectedContent struct {
 	Title       string   // Selected title
 	ShowNote    string   // Selected show note
-	AdTimecodes []string // Selected ad timecodes
 }

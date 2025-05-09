@@ -2,7 +2,6 @@ package ui
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/automate-podcast/internal/model"
@@ -91,17 +90,7 @@ func (ui *InteractiveUI) SelectContent(candidates *model.ContentCandidates) (*mo
 		ui.logger.Info("Edited show notes")
 	}
 
-	// 5. Ad timecode selection
-	adIndex := 0
-	adPrompt := &survey.Select{
-		Message: "Select ad placement timecodes:",
-		Options: formatAdOptions(candidates.AdTimecodes),
-	}
-	if err := survey.AskOne(adPrompt, &adIndex); err != nil {
-		return nil, fmt.Errorf("ad timecode selection failed: %w", err)
-	}
-	selected.AdTimecodes = candidates.AdTimecodes[adIndex]
-	ui.logger.Infof("Selected ad timecodes: %v", selected.AdTimecodes)
+	// Ad timecode selection removed
 
 	// 6. Final confirmation
 	confirm := false
@@ -143,11 +132,4 @@ func formatShowNoteOptions(showNotes []string) []string {
 	return options
 }
 
-// formatAdOptions formats ad timecode candidates for display
-func formatAdOptions(adTimecodes [][]string) []string {
-	options := make([]string, len(adTimecodes))
-	for i, timecodes := range adTimecodes {
-		options[i] = fmt.Sprintf("%d: %s", i+1, strings.Join(timecodes, ", "))
-	}
-	return options
-}
+// Ad timecode formatting removed

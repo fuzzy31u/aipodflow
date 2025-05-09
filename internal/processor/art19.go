@@ -40,7 +40,6 @@ func (p *Art19Processor) UploadDraft(ctx context.Context, audioPath string, cont
 	p.logger.Info("Preparing to upload to Art19...")
 	p.logger.Infof("Title: %s", content.Title)
 	p.logger.Info("Show Notes: [content omitted for brevity]")
-	p.logger.Infof("Ad Timecodes: %v", content.AdTimecodes)
 	
 	// Verify the audio file exists
 	p.logger.Infof("Checking audio file: %s", audioPath)
