@@ -55,7 +55,7 @@ func (s *AIService) GenerateAllContent(ctx context.Context, transcript string) (
 			},
 		},
 		Temperature: 0.7,
-		MaxTokens:   3000,
+		MaxTokens:   8000,
 	}
 
 	// Make the API call
@@ -77,7 +77,7 @@ func (s *AIService) GenerateAllContent(ctx context.Context, transcript string) (
 	showNoteStart := strings.Index(responseText, "[SHOW NOTE]")
 
 	if titleStart >= 0 && showNoteStart > titleStart {
-		titleSection = strings.TrimSpace(responseText[titleStart+len("[TITLE]"):showNoteStart])
+		titleSection = strings.TrimSpace(responseText[titleStart+len("[TITLE]") : showNoteStart])
 	}
 
 	// Extract show note section

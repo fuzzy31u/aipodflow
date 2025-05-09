@@ -21,9 +21,10 @@ func NewProcessCmd() *cobra.Command {
 	var inputAudio string
 	var outputDir string
 	var verbose bool
-	var nonInteractive bool
 	var titlesOnly bool
 	var generateShowNotes bool
+	var skipUpload bool
+	var apiOnly bool
 
 	processCmd := &cobra.Command{
 		Use:   "process-transcript",
@@ -86,49 +87,43 @@ func NewProcessCmd() *cobra.Command {
 			}
 			logger.Info("Content generation completed")
 
-			// 5. Selection process (interactive or automatic)
+			// 5. Selection process (always use our display-only UI)
 			var selectedContent *model.SelectedContent
 
-			if nonInteractive {
-				// Non-interactive mode: automatically select the first candidates
-				logger.Info("Running in non-interactive mode, automatically selecting first candidates...")
-				selectedContent = &model.SelectedContent{
-					Title:       candidates.Titles[0],
-					ShowNote:    candidates.ShowNotes[0],
+			// Use the interactive UI which now just displays the content without prompts
+			interactiveUI := ui.NewInteractiveUI(logger)
+			logger.Info("Displaying content...")
+			selectedContent, err = interactiveUI.SelectContent(candidates)
+			if err != nil {
+				return fmt.Errorf("content display failed: %w", err)
+			}
+
+			// Save all candidates to file if output directory is specified
+			if outputDir != "" {
+				allCandidatesPath := filepath.Join(outputDir, "all_candidates.txt")
+				content := "=== Title Candidates ===\n"
+				for i, title := range candidates.Titles {
+					content += fmt.Sprintf("%d: %s\n", i+1, title)
 				}
 
-				// Output all candidates to file
-				if outputDir != "" {
-					allCandidatesPath := filepath.Join(outputDir, "all_candidates.txt")
-					content := "=== Title Candidates ===\n"
-					for i, title := range candidates.Titles {
-						content += fmt.Sprintf("%d: %s\n", i+1, title)
-					}
-
-					content += "\n=== Show Note Candidates ===\n"
-					for i, note := range candidates.ShowNotes {
-						content += fmt.Sprintf("%d:\n%s\n\n", i+1, note)
-					}
-
-					// Ad timecode section removed
-
-					if err := os.WriteFile(allCandidatesPath, []byte(content), 0644); err != nil {
-						logger.Warnf("Failed to save all candidates to file: %v", err)
-					} else {
-						logger.Infof("All candidates saved to %s", allCandidatesPath)
-					}
+				content += "\n=== Show Note Candidates ===\n"
+				for i, note := range candidates.ShowNotes {
+					content += fmt.Sprintf("%d:\n%s\n\n", i+1, note)
 				}
-			} else {
-				// Interactive mode
-				interactiveUI := ui.NewInteractiveUI(logger)
-				logger.Info("Starting interactive selection...")
-				var err error
-				selectedContent, err = interactiveUI.SelectContent(candidates)
-				if err != nil {
-					return fmt.Errorf("interactive selection failed: %w", err)
+
+				if err := os.WriteFile(allCandidatesPath, []byte(content), 0644); err != nil {
+					logger.Warnf("Failed to save all candidates to file: %v", err)
+				} else {
+					logger.Infof("All candidates saved to %s", allCandidatesPath)
 				}
 			}
-			logger.Info("Selection completed")
+			logger.Info("Content display completed")
+
+			// Exit early if api-only flag is set
+			if apiOnly {
+				logger.Info("API-only mode: stopping after API call as requested")
+				return nil
+			}
 
 			// 6. Save selection (optional)
 			if outputDir != "" {
@@ -147,11 +142,15 @@ func NewProcessCmd() *cobra.Command {
 				}
 			}
 
-			// 7. Art19 upload
-			art19Processor := processor.NewArt19Processor(art19Service, logger)
-			logger.Info("Starting Art19 upload process...")
-			if err := art19Processor.UploadDraft(cmd.Context(), inputAudio, selectedContent); err != nil {
-				return fmt.Errorf("Art19 upload failed: %w", err)
+			// 7. Art19 upload (optional)
+			if !skipUpload {
+				art19Processor := processor.NewArt19Processor(art19Service, logger)
+				logger.Info("Starting Art19 upload process...")
+				if err := art19Processor.UploadDraft(cmd.Context(), inputAudio, selectedContent); err != nil {
+					return fmt.Errorf("Art19 upload failed: %w", err)
+				}
+			} else {
+				logger.Info("Skipping Art19 upload as requested")
 			}
 
 			logger.Info("Process completed successfully!")
@@ -163,10 +162,11 @@ func NewProcessCmd() *cobra.Command {
 	processCmd.Flags().StringVarP(&inputTranscript, "input-transcript", "t", "", "Path to transcript file (required)")
 	processCmd.Flags().StringVarP(&inputAudio, "input-audio", "a", "", "Path to audio file (required)")
 	processCmd.Flags().StringVarP(&outputDir, "output-dir", "o", "", "Output directory for generated files")
-	processCmd.Flags().BoolVarP(&nonInteractive, "non-interactive", "n", false, "Run in non-interactive mode (auto-select first candidates)")
 	processCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "Enable verbose logging")
 	processCmd.Flags().BoolVar(&titlesOnly, "titles-only", false, "Generate only titles, skip show notes")
 	processCmd.Flags().BoolVar(&generateShowNotes, "gen-shownotes", true, "Generate show notes (default: true)")
+	processCmd.Flags().BoolVar(&skipUpload, "skip-upload", false, "Skip uploading to Art19")
+	processCmd.Flags().BoolVar(&apiOnly, "api-only", false, "Stop after API call and display response")
 
 	// Set required flags
 	if err := processCmd.MarkFlagRequired("input-transcript"); err != nil {
