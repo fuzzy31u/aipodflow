@@ -3,7 +3,6 @@ package processor
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/automate-podcast/internal/model"
 	"github.com/automate-podcast/services"
@@ -31,12 +30,14 @@ func (p *ContentProcessor) GenerateCandidates(transcript string, generateShowNot
 
 	p.logger.Info("Starting content generation process...")
 
-	// 1. Generate title candidates
-	p.logger.Info("Generating title candidates...")
-	titles, err := p.aiService.GenerateTitles(ctx, transcript)
+	// Generate all content in a single API call
+	p.logger.Info("Generating all content in a single API call...")
+	titles, showNotes, err := p.aiService.GenerateAllContent(ctx, transcript)
 	if err != nil {
-		return nil, fmt.Errorf("failed to generate titles: %w", err)
+		return nil, fmt.Errorf("failed to generate content: %w", err)
 	}
+
+	// Store the titles
 	p.logger.Infof("Generated %d title candidates", len(titles))
 	result.Titles = titles
 
@@ -45,21 +46,9 @@ func (p *ContentProcessor) GenerateCandidates(transcript string, generateShowNot
 		return result, nil
 	}
 
-	// Add a delay to avoid hitting rate limits
-	p.logger.Info("Waiting 5 seconds before generating show notes to avoid rate limits...")
-	time.Sleep(5 * time.Second)
-
-	// 2. Generate show note candidates
-	p.logger.Info("Generating show note candidates...")
-	showNotes, err := p.aiService.GenerateShowNotes(ctx, transcript)
-	if err != nil {
-		p.logger.Warnf("Failed to generate show notes: %v", err)
-		// Continue with empty show notes instead of failing
-		result.ShowNotes = []string{}
-	} else {
-		p.logger.Infof("Generated %d show note candidates", len(showNotes))
-		result.ShowNotes = showNotes
-	}
+	// Store the show notes
+	p.logger.Infof("Generated %d show note candidates", len(showNotes))
+	result.ShowNotes = showNotes
 
 	return result, nil
 }
