@@ -12,6 +12,11 @@ AIPodFlow is an open-source CLI tool that leverages AI to streamline podcast pro
   - Generate engaging title candidates based on transcript content
   - Create comprehensive show notes with proper formatting and emojis
   - Suggest optimal ad placement timecodes for monetization
+- **Step-by-Step Workflow**: Execute each step of the podcast production process separately
+  - Step 1: Process transcript and generate content with OpenAI
+  - Step 2: Upload title, show notes, and audio to Art19
+  - Step 3: Redeploy website on Vercel (coming soon)
+  - Step 4: Create and post content to X (coming soon)
 - **Interactive Selection**: Choose the best content from multiple AI-generated candidates
 - **Non-interactive Mode**: Automatically select content for batch processing
 - **Art19 Integration**: Seamlessly upload content to Art19 podcast hosting platform
@@ -59,23 +64,40 @@ art19_password: "your_art19_password"
 
 ## 🖥️ Usage
 
-### Process a Transcript
+### Process a Podcast (Step by Step)
+
+AIPodFlow now supports executing each step of the podcast processing workflow separately, giving you more control over the process:
+
+```bash
+# Step 1: Process transcript and call OpenAI API
+./podcast-cli process step1 --input-transcript /path/to/transcript.txt --output-dir ./output
+
+# Step 2: Upload title, shownote and audio to Art19
+./podcast-cli process step2 --input-audio /path/to/audio.mp3 --content-file ./output/selected_content.txt
+
+# Step 3: Redeploy website on Vercel (not fully implemented yet)
+./podcast-cli process step3
+
+# Step 4: Create text to post to X (not fully implemented yet)
+./podcast-cli process step4
+```
+
+### Process a Transcript (Legacy Mode)
+
+You can still use the legacy mode to process everything in a single command:
 
 ```bash
 # Interactive mode (default)
-./podcast-cli process-transcript --input-transcript /path/to/transcript.txt
-
-# Non-interactive mode (auto-selects first candidates)
-./podcast-cli process-transcript --input-transcript /path/to/transcript.txt --non-interactive
+./podcast-cli process all --input-transcript /path/to/transcript.txt
 
 # Specify output directory for generated content
-./podcast-cli process-transcript --input-transcript /path/to/transcript.txt --output-dir ./output
+./podcast-cli process all --input-transcript /path/to/transcript.txt --output-dir ./output
 
 # Include audio file for Art19 upload
-./podcast-cli process-transcript --input-transcript /path/to/transcript.txt --input-audio /path/to/audio.mp3
+./podcast-cli process all --input-transcript /path/to/transcript.txt --input-audio /path/to/audio.mp3
 
 # Enable verbose logging
-./podcast-cli process-transcript --input-transcript /path/to/transcript.txt --verbose
+./podcast-cli process all --input-transcript /path/to/transcript.txt --verbose
 ```
 
 ### Upload to Art19 with PlayWright MCP
@@ -97,16 +119,50 @@ This script will launch a browser, log in to Art19, and upload your episode auto
 
 ### Command Options
 
+#### Step 1: Process Transcript and Call OpenAI API
+
 ```
 Usage:
-  podcast-cli process-transcript [flags]
+  podcast-cli process step1 [flags]
 
 Flags:
-  -h, --help                      help for process-transcript
-  -a, --input-audio string        Path to audio file (for Art19 upload)
+      --gen-shownotes             Generate show notes (default: true)
+  -h, --help                      help for step1
   -t, --input-transcript string   Path to transcript file (required)
-  -n, --non-interactive           Run in non-interactive mode (auto-select first candidates)
+      --openai-key string         OpenAI API key (can also be set via OPENAI_API_KEY environment variable)
   -o, --output-dir string         Output directory for generated files
+      --titles-only               Generate only titles, skip show notes
+  -v, --verbose                   Enable verbose logging
+```
+
+#### Step 2: Upload to Art19
+
+```
+Usage:
+  podcast-cli process step2 [flags]
+
+Flags:
+  -c, --content-file string      Path to content file with title and show notes (required)
+  -h, --help                     help for step2
+  -a, --input-audio string       Path to audio file (required)
+  -v, --verbose                  Enable verbose logging
+```
+
+#### Legacy Mode (All Steps)
+
+```
+Usage:
+  podcast-cli process all [flags]
+
+Flags:
+      --api-only                  Stop after API call and display response
+      --gen-shownotes             Generate show notes (default: true)
+  -h, --help                      help for all
+  -a, --input-audio string        Path to audio file (required)
+  -t, --input-transcript string   Path to transcript file (required)
+  -o, --output-dir string         Output directory for generated files
+      --skip-upload               Skip uploading to Art19
+      --titles-only               Generate only titles, skip show notes
   -v, --verbose                   Enable verbose logging
 ```
 

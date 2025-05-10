@@ -1,8 +1,6 @@
 package ui
 
 import (
-	"fmt"
-
 	"github.com/automate-podcast/internal/model"
 	"github.com/sirupsen/logrus"
 )
@@ -56,26 +54,7 @@ func (ui *InteractiveUI) SelectContent(candidates *model.ContentCandidates) (*mo
 	return selected, nil
 }
 
-// formatTitleOptions formats title candidates for display
-func formatTitleOptions(titles []string) []string {
-	options := make([]string, len(titles))
-	for i, title := range titles {
-		options[i] = fmt.Sprintf("%d: %s", i+1, title)
-	}
-	return options
-}
-
-// formatShowNoteOptions formats ShowNote candidates for display
-func formatShowNoteOptions(showNotes []string) []string {
-	options := make([]string, len(showNotes))
-	for i, note := range showNotes {
-		preview := note
-		if len(note) > 100 {
-			preview = note[:97] + "..."
-		}
-		options[i] = fmt.Sprintf("%d: %s", i+1, preview)
-	}
-	return options
-}
+// Note: These formatting functions have been removed as they are no longer used
+// in the current implementation of the interactive UI.
 
 // Ad timecode formatting removed
