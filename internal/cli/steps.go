@@ -11,6 +11,7 @@ import (
 	"github.com/automate-podcast/internal/processor"
 	"github.com/automate-podcast/internal/ui"
 	"github.com/automate-podcast/services"
+	"github.com/joho/godotenv"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -238,11 +239,12 @@ func Step2Cmd() *cobra.Command {
 // Step3Cmd creates a command for redeploying on Vercel
 func Step3Cmd() *cobra.Command {
 	var verbose bool
+	var dryRun bool
 
 	cmd := &cobra.Command{
 		Use:   "step3",
 		Short: "Redeploy on Vercel",
-		Long:  `Call Redeploy button in the Vercel via API.`,
+		Long:  `Call Redeploy button in the Vercel via API to trigger a website redeployment.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Initialize logger
 			logger := logrus.New()
@@ -255,9 +257,34 @@ func Step3Cmd() *cobra.Command {
 				FullTimestamp: true,
 			})
 
-			// This feature is not implemented yet
-			logger.Info("Vercel redeployment feature is not implemented yet")
-			logger.Info("This will be implemented in a future update")
+			// Load .env file if it exists
+			if err := godotenv.Load(); err != nil {
+				logger.Debugf("No .env file found or error loading it: %v", err)
+			} else {
+				logger.Debug("Loaded environment variables from .env file")
+			}
+
+			// Initialize Vercel service directly from environment variables
+			vercelService := services.NewVercelServiceFromEnv(logger)
+
+			// Check if Vercel deploy hook is configured
+			deployHookURL := os.Getenv("VERCEL_DEPLOY_HOOK")
+			if deployHookURL == "" {
+				return fmt.Errorf("Vercel deploy hook URL is not configured. Please set the VERCEL_DEPLOY_HOOK environment variable")
+			}
+
+			// If dry run, just log the action without actually triggering the deployment
+			if dryRun {
+				logger.Info("Dry run mode: Would trigger Vercel redeployment using hook URL")
+				logger.Info("Vercel hook URL is configured correctly")
+			} else {
+				// Trigger the redeployment
+				logger.Info("Triggering Vercel redeployment...")
+				if err := vercelService.TriggerRedeploy(cmd.Context()); err != nil {
+					return fmt.Errorf("failed to trigger Vercel redeployment: %w", err)
+				}
+				logger.Info("Vercel redeployment triggered successfully")
+			}
 
 			logger.Info("Step 3 completed successfully!")
 			return nil
@@ -266,6 +293,7 @@ func Step3Cmd() *cobra.Command {
 
 	// Set flags
 	cmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "Enable verbose logging")
+	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Validate configuration without triggering actual redeployment")
 
 	return cmd
 }
