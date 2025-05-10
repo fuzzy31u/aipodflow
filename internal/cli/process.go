@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -113,19 +112,4 @@ func NewLegacyProcessCmd() *cobra.Command {
 	return processCmd
 }
 
-// sanitizeFilename replaces characters that cannot be used in filenames
-func sanitizeFilename(filename string) string {
-	// Replace characters that cannot be used in filenames
-	replacer := strings.NewReplacer(
-		"/", "_",
-		"\\", "_",
-		":", "_",
-		"*", "_",
-		"?", "_",
-		"\"", "_",
-		"<", "_",
-		">", "_",
-		"|", "_",
-	)
-	return replacer.Replace(filename)
-}
+// Note: sanitizeFilename function has been moved to the processor package
