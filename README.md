@@ -16,7 +16,7 @@ AIPodFlow is an open-source CLI tool that leverages AI to streamline podcast pro
   - Step 1: Process transcript and generate content with OpenAI
   - Step 2: Upload title, show notes, and audio to Art19
   - Step 3: Redeploy website on Vercel
-  - Step 4: Create and post content to X (coming soon)
+  - Step 4: Generate social media post text from RSS feed data
 - **Interactive Selection**: Choose the best content from multiple AI-generated candidates
 - **Non-interactive Mode**: Automatically select content for batch processing
 - **Art19 Integration**: Seamlessly upload content to Art19 podcast hosting platform
@@ -161,6 +161,22 @@ Flags:
   -v, --verbose                  Enable verbose logging
 ```
 
+#### Step 4: Generate Social Media Post Text
+
+```
+Usage:
+  podcast-cli process step4 [flags]
+
+Flags:
+      --apple-url string        URL of the Apple Podcast show (can also be set via APPLE_PODCAST_URL environment variable)
+      --dry-run                 Validate configuration without making external requests
+  -h, --help                    help for step4
+      --output string           File to save the generated post text (optional)
+      --rss-url string          URL of the podcast RSS feed (can also be set via RSS_FEED_URL environment variable)
+      --spotify-url string      URL of the Spotify show (can also be set via SPOTIFY_SHOW_URL environment variable)
+  -v, --verbose                 Enable verbose logging
+```
+
 #### Legacy Mode (All Steps)
 
 ```
@@ -197,8 +213,35 @@ AIPodFlow is built with a modular architecture:
 
 - **CLI Layer**: Handles user input and command execution
 - **Processor Layer**: Manages the content generation workflow
-- **Service Layer**: Integrates with external APIs (OpenAI, Art19)
+- **Service Layer**: Integrates with external APIs (OpenAI, Art19, Vercel) and services (RSS feeds)
 - **UI Layer**: Provides interactive selection interface
+
+## 📱 Social Media Post Generation
+
+The Step4 command generates formatted text for posting to social media platforms about your podcast episodes:
+
+- **Automated Data Collection**: Fetches the latest episode title from your podcast's RSS feed
+- **Platform Links**: Includes links to your podcast on Spotify and Apple Podcasts
+- **Customizable Template**: Uses a predefined template with your podcast branding
+- **Environment Configuration**: Configure URLs via environment variables or command-line flags
+- **Output Options**: Display in console or save to a file for later use
+
+Example output:
+
+```
+IT企業で働くママによる子育て×Tech Podcast momit.fm を配信しました🎙 w/@m2vela
+—
+[Latest Episode Title]
+
+👇Spotify
+[Spotify URL]
+
+👇Apple
+[Apple Podcast URL]
+
+#momitfm #子育テック
+```
+
 - **Model Layer**: Defines data structures for content processing
 
 ### Integrations

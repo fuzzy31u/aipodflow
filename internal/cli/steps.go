@@ -74,12 +74,12 @@ func Step1Cmd() *cobra.Command {
 			logger.Info("Starting content generation...")
 			// Determine what to generate based on flags
 			genShownotes := generateShowNotes
-	
+
 			// If titles-only is set, override other flags
 			if titlesOnly {
 				genShownotes = false
 			}
-	
+
 			// Generate content
 			candidates, err := contentProcessor.GenerateCandidates(transcript, genShownotes)
 			if err != nil {
@@ -113,12 +113,12 @@ func Step1Cmd() *cobra.Command {
 				} else {
 					logger.Infof("All candidates saved to %s", allCandidatesPath)
 				}
-				
+
 				// Also save the selected content
 				selectedPath := filepath.Join(outputDir, "selected_content.txt")
 				selectedContent := fmt.Sprintf("=== Selected Content ===\nTitle: %s\n\nShow Notes:\n%s",
 					selectedContent.Title, selectedContent.ShowNote)
-				
+
 				if err := os.WriteFile(selectedPath, []byte(selectedContent), 0644); err != nil {
 					logger.Warnf("Failed to save selected content to file: %v", err)
 				} else {
@@ -184,16 +184,16 @@ func Step2Cmd() *cobra.Command {
 				if err != nil {
 					return fmt.Errorf("failed to read content file: %w", err)
 				}
-				
+
 				// Parse content
 				contentStr := string(content)
 				titleStart := strings.Index(contentStr, "Title: ")
 				showNotesStart := strings.Index(contentStr, "Show Notes:")
-				
+
 				if titleStart >= 0 && showNotesStart > titleStart {
-					title := strings.TrimSpace(contentStr[titleStart+len("Title: "):showNotesStart])
+					title := strings.TrimSpace(contentStr[titleStart+len("Title: ") : showNotesStart])
 					showNote := strings.TrimSpace(contentStr[showNotesStart+len("Show Notes:"):])
-					
+
 					selectedContent = &model.SelectedContent{
 						Title:    title,
 						ShowNote: showNote,
@@ -208,7 +208,7 @@ func Step2Cmd() *cobra.Command {
 			// Initialize Art19 service
 			art19Service := services.NewArt19Service(cfg.Art19Username, cfg.Art19Password, logger)
 			art19Processor := processor.NewArt19Processor(art19Service, logger)
-			
+
 			// Upload to Art19
 			logger.Info("Starting Art19 upload process...")
 			if err := art19Processor.UploadDraft(cmd.Context(), inputAudio, selectedContent); err != nil {
@@ -298,14 +298,19 @@ func Step3Cmd() *cobra.Command {
 	return cmd
 }
 
-// Step4Cmd creates a command for posting to X
+// Step4Cmd creates a command for generating social media post text
 func Step4Cmd() *cobra.Command {
 	var verbose bool
+	var dryRun bool
+	var rssURL string
+	var spotifyShowURL string
+	var applePodcastShowURL string
+	var outputFile string
 
 	cmd := &cobra.Command{
 		Use:   "step4",
-		Short: "Post to X",
-		Long:  `Create the text to post to X.`,
+		Short: "Generate SNS post",
+		Long:  `Generate text to post to social media platforms from podcast RSS feed.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Initialize logger
 			logger := logrus.New()
@@ -318,9 +323,94 @@ func Step4Cmd() *cobra.Command {
 				FullTimestamp: true,
 			})
 
-			// This feature is not implemented yet
-			logger.Info("X posting feature is not implemented yet")
-			logger.Info("This will be implemented in a future update")
+			// Load .env file if it exists
+			if err := godotenv.Load(); err != nil {
+				logger.Debugf("No .env file found or error loading it: %v", err)
+			} else {
+				logger.Debug("Loaded environment variables from .env file")
+			}
+
+			// Set values from environment variables or command-line flags
+			if rssURL == "" {
+				rssURL = os.Getenv("RSS_FEED_URL")
+				if rssURL == "" {
+					logger.Error("RSS_FEED_URL not set in environment or command-line flag")
+					return fmt.Errorf("RSS feed URL is required. Set it with --rss-url flag or RSS_FEED_URL environment variable")
+				} else {
+					logger.Infof("Using RSS feed URL from environment: %s", rssURL)
+				}
+			}
+			logger.Infof("RSS feed URL: %s", rssURL)
+
+			if spotifyShowURL == "" {
+				spotifyShowURL = os.Getenv("SPOTIFY_SHOW_URL")
+				if spotifyShowURL == "" {
+					logger.Error("SPOTIFY_SHOW_URL not set in environment or command-line flag")
+					return fmt.Errorf("Spotify show URL is required. Set it with --spotify-url flag or SPOTIFY_SHOW_URL environment variable")
+				} else {
+					logger.Infof("Using Spotify show URL from environment: %s", spotifyShowURL)
+				}
+			}
+			logger.Infof("Spotify show URL: %s", spotifyShowURL)
+
+			if applePodcastShowURL == "" {
+				applePodcastShowURL = os.Getenv("APPLE_PODCAST_URL")
+				if applePodcastShowURL == "" {
+					logger.Error("APPLE_PODCAST_URL not set in environment or command-line flag")
+					return fmt.Errorf("Apple Podcast URL is required. Set it with --apple-url flag or APPLE_PODCAST_URL environment variable")
+				} else {
+					logger.Infof("Using Apple Podcast URL from environment: %s", applePodcastShowURL)
+				}
+			}
+			logger.Infof("Apple Podcast URL: %s", applePodcastShowURL)
+
+			// Initialize SNS service
+			snsService := services.NewSNSService(logger)
+
+			// Fetch latest episode title from RSS feed
+			logger.Info("Fetching latest episode title from RSS feed...")
+			title, err := snsService.GetLatestEpisodeTitle(cmd.Context(), rssURL)
+			if err != nil {
+				return fmt.Errorf("failed to fetch latest episode title: %w", err)
+			}
+			logger.Infof("Latest episode title: %s", title)
+
+			// Fetch latest Spotify episode URL
+			logger.Info("Fetching latest Spotify episode URL...")
+			spotifyURL, err := snsService.GetLatestSpotifyURL(cmd.Context(), spotifyShowURL)
+			if err != nil {
+				logger.Warnf("Failed to fetch latest Spotify episode URL: %v", err)
+				logger.Warn("Using Spotify show URL as fallback")
+				spotifyURL = spotifyShowURL
+			}
+			logger.Infof("Spotify URL: %s", spotifyURL)
+
+			// Fetch latest Apple Podcast episode URL
+			logger.Info("Fetching latest Apple Podcast episode URL...")
+			appleURL, err := snsService.GetLatestApplePodcastURL(cmd.Context(), applePodcastShowURL)
+			if err != nil {
+				logger.Warnf("Failed to fetch latest Apple Podcast episode URL: %v", err)
+				logger.Warn("Using Apple Podcast show URL as fallback")
+				appleURL = applePodcastShowURL
+			}
+			logger.Infof("Apple Podcast URL: %s", appleURL)
+
+			// Generate post text
+			postText := snsService.CreateSNSPostText(title, spotifyURL, appleURL)
+
+			// Display the post text
+			logger.Info("Generated social media post text:")
+			fmt.Println("\n" + postText + "\n")
+			logger.Infof("Character count: %d", len(postText))
+
+			// Save to file if output file is specified
+			if outputFile != "" {
+				logger.Infof("Saving post text to file: %s", outputFile)
+				if err := os.WriteFile(outputFile, []byte(postText), 0644); err != nil {
+					return fmt.Errorf("failed to save post text to file: %w", err)
+				}
+				logger.Info("Post text saved to file successfully")
+			}
 
 			logger.Info("Step 4 completed successfully!")
 			return nil
@@ -329,6 +419,11 @@ func Step4Cmd() *cobra.Command {
 
 	// Set flags
 	cmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "Enable verbose logging")
+	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Validate configuration without making external requests")
+	cmd.Flags().StringVar(&rssURL, "rss-url", "", "URL of the podcast RSS feed (required, can also be set via RSS_FEED_URL environment variable)")
+	cmd.Flags().StringVar(&spotifyShowURL, "spotify-url", "", "URL of the Spotify show (required, can also be set via SPOTIFY_SHOW_URL environment variable)")
+	cmd.Flags().StringVar(&applePodcastShowURL, "apple-url", "", "URL of the Apple Podcast show (required, can also be set via APPLE_PODCAST_URL environment variable)")
+	cmd.Flags().StringVar(&outputFile, "output", "", "File to save the generated post text (optional)")
 
 	return cmd
 }
