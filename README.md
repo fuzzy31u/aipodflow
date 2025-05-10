@@ -15,7 +15,7 @@ AIPodFlow is an open-source CLI tool that leverages AI to streamline podcast pro
 - **Step-by-Step Workflow**: Execute each step of the podcast production process separately
   - Step 1: Process transcript and generate content with OpenAI
   - Step 2: Upload title, show notes, and audio to Art19
-  - Step 3: Redeploy website on Vercel (coming soon)
+  - Step 3: Redeploy website on Vercel
   - Step 4: Create and post content to X (coming soon)
 - **Interactive Selection**: Choose the best content from multiple AI-generated candidates
 - **Non-interactive Mode**: Automatically select content for batch processing
@@ -75,8 +75,9 @@ AIPodFlow now supports executing each step of the podcast processing workflow se
 # Step 2: Upload title, shownote and audio to Art19
 ./podcast-cli process step2 --input-audio /path/to/audio.mp3 --content-file ./output/selected_content.txt
 
-# Step 3: Redeploy website on Vercel (not fully implemented yet)
-./podcast-cli process step3
+# Step 3: Redeploy website on Vercel
+./podcast-cli process step3 --dry-run  # Validate configuration without triggering deployment
+./podcast-cli process step3            # Trigger actual redeployment
 
 # Step 4: Create text to post to X (not fully implemented yet)
 ./podcast-cli process step4
@@ -145,6 +146,18 @@ Flags:
   -c, --content-file string      Path to content file with title and show notes (required)
   -h, --help                     help for step2
   -a, --input-audio string       Path to audio file (required)
+  -v, --verbose                  Enable verbose logging
+```
+
+#### Step 3: Redeploy on Vercel
+
+```
+Usage:
+  podcast-cli process step3 [flags]
+
+Flags:
+      --dry-run                  Validate configuration without triggering actual redeployment
+  -h, --help                     help for step3
   -v, --verbose                  Enable verbose logging
 ```
 
