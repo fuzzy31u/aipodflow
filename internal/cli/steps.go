@@ -330,21 +330,39 @@ func Step4Cmd() *cobra.Command {
 				logger.Debug("Loaded environment variables from .env file")
 			}
 
-			// Set default values if not provided
+			// Set values from environment variables or command-line flags
 			if rssURL == "" {
-				rssURL = "https://rss.art19.com/momitfm"
-				logger.Infof("Using default RSS feed URL: %s", rssURL)
+				rssURL = os.Getenv("RSS_FEED_URL")
+				if rssURL == "" {
+					rssURL = "https://rss.art19.com/momitfm" // Fallback default
+					logger.Info("RSS_FEED_URL not set in environment, using default value")
+				} else {
+					logger.Infof("Using RSS feed URL from environment: %s", rssURL)
+				}
 			}
+			logger.Infof("RSS feed URL: %s", rssURL)
 
 			if spotifyShowURL == "" {
-				spotifyShowURL = "https://open.spotify.com/show/5F2ppZb8gxJngLlO6wlIqX"
-				logger.Infof("Using default Spotify show URL: %s", spotifyShowURL)
+				spotifyShowURL = os.Getenv("SPOTIFY_SHOW_URL")
+				if spotifyShowURL == "" {
+					spotifyShowURL = "https://open.spotify.com/show/5F2ppZb8gxJngLlO6wlIqX" // Fallback default
+					logger.Info("SPOTIFY_SHOW_URL not set in environment, using default value")
+				} else {
+					logger.Infof("Using Spotify show URL from environment: %s", spotifyShowURL)
+				}
 			}
+			logger.Infof("Spotify show URL: %s", spotifyShowURL)
 
 			if applePodcastShowURL == "" {
-				applePodcastShowURL = "https://podcasts.apple.com/us/podcast/momit-fm/id1589345170"
-				logger.Infof("Using default Apple Podcast show URL: %s", applePodcastShowURL)
+				applePodcastShowURL = os.Getenv("APPLE_PODCAST_URL")
+				if applePodcastShowURL == "" {
+					applePodcastShowURL = "https://podcasts.apple.com/us/podcast/momit-fm/id1589345170" // Fallback default
+					logger.Info("APPLE_PODCAST_URL not set in environment, using default value")
+				} else {
+					logger.Infof("Using Apple Podcast URL from environment: %s", applePodcastShowURL)
+				}
 			}
+			logger.Infof("Apple Podcast URL: %s", applePodcastShowURL)
 
 			// Initialize SNS service
 			snsService := services.NewSNSService(logger)
@@ -402,9 +420,9 @@ func Step4Cmd() *cobra.Command {
 	// Set flags
 	cmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "Enable verbose logging")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Validate configuration without making external requests")
-	cmd.Flags().StringVar(&rssURL, "rss-url", "", "URL of the podcast RSS feed (default: https://rss.art19.com/momitfm)")
-	cmd.Flags().StringVar(&spotifyShowURL, "spotify-url", "", "URL of the Spotify show (default: https://open.spotify.com/show/5F2ppZb8gxJngLlO6wlIqX)")
-	cmd.Flags().StringVar(&applePodcastShowURL, "apple-url", "", "URL of the Apple Podcast show (default: https://podcasts.apple.com/us/podcast/momit-fm/id1589345170)")
+	cmd.Flags().StringVar(&rssURL, "rss-url", "", "URL of the podcast RSS feed (can also be set via RSS_FEED_URL environment variable)")
+	cmd.Flags().StringVar(&spotifyShowURL, "spotify-url", "", "URL of the Spotify show (can also be set via SPOTIFY_SHOW_URL environment variable)")
+	cmd.Flags().StringVar(&applePodcastShowURL, "apple-url", "", "URL of the Apple Podcast show (can also be set via APPLE_PODCAST_URL environment variable)")
 	cmd.Flags().StringVar(&outputFile, "output", "", "File to save the generated post text (optional)")
 
 	return cmd
