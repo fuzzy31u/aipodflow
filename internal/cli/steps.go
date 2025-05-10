@@ -334,8 +334,8 @@ func Step4Cmd() *cobra.Command {
 			if rssURL == "" {
 				rssURL = os.Getenv("RSS_FEED_URL")
 				if rssURL == "" {
-					rssURL = "https://rss.art19.com/momitfm" // Fallback default
-					logger.Info("RSS_FEED_URL not set in environment, using default value")
+					logger.Error("RSS_FEED_URL not set in environment or command-line flag")
+					return fmt.Errorf("RSS feed URL is required. Set it with --rss-url flag or RSS_FEED_URL environment variable")
 				} else {
 					logger.Infof("Using RSS feed URL from environment: %s", rssURL)
 				}
@@ -345,8 +345,8 @@ func Step4Cmd() *cobra.Command {
 			if spotifyShowURL == "" {
 				spotifyShowURL = os.Getenv("SPOTIFY_SHOW_URL")
 				if spotifyShowURL == "" {
-					spotifyShowURL = "https://open.spotify.com/show/5F2ppZb8gxJngLlO6wlIqX" // Fallback default
-					logger.Info("SPOTIFY_SHOW_URL not set in environment, using default value")
+					logger.Error("SPOTIFY_SHOW_URL not set in environment or command-line flag")
+					return fmt.Errorf("Spotify show URL is required. Set it with --spotify-url flag or SPOTIFY_SHOW_URL environment variable")
 				} else {
 					logger.Infof("Using Spotify show URL from environment: %s", spotifyShowURL)
 				}
@@ -356,8 +356,8 @@ func Step4Cmd() *cobra.Command {
 			if applePodcastShowURL == "" {
 				applePodcastShowURL = os.Getenv("APPLE_PODCAST_URL")
 				if applePodcastShowURL == "" {
-					applePodcastShowURL = "https://podcasts.apple.com/us/podcast/momit-fm/id1589345170" // Fallback default
-					logger.Info("APPLE_PODCAST_URL not set in environment, using default value")
+					logger.Error("APPLE_PODCAST_URL not set in environment or command-line flag")
+					return fmt.Errorf("Apple Podcast URL is required. Set it with --apple-url flag or APPLE_PODCAST_URL environment variable")
 				} else {
 					logger.Infof("Using Apple Podcast URL from environment: %s", applePodcastShowURL)
 				}
@@ -420,9 +420,9 @@ func Step4Cmd() *cobra.Command {
 	// Set flags
 	cmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "Enable verbose logging")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Validate configuration without making external requests")
-	cmd.Flags().StringVar(&rssURL, "rss-url", "", "URL of the podcast RSS feed (can also be set via RSS_FEED_URL environment variable)")
-	cmd.Flags().StringVar(&spotifyShowURL, "spotify-url", "", "URL of the Spotify show (can also be set via SPOTIFY_SHOW_URL environment variable)")
-	cmd.Flags().StringVar(&applePodcastShowURL, "apple-url", "", "URL of the Apple Podcast show (can also be set via APPLE_PODCAST_URL environment variable)")
+	cmd.Flags().StringVar(&rssURL, "rss-url", "", "URL of the podcast RSS feed (required, can also be set via RSS_FEED_URL environment variable)")
+	cmd.Flags().StringVar(&spotifyShowURL, "spotify-url", "", "URL of the Spotify show (required, can also be set via SPOTIFY_SHOW_URL environment variable)")
+	cmd.Flags().StringVar(&applePodcastShowURL, "apple-url", "", "URL of the Apple Podcast show (required, can also be set via APPLE_PODCAST_URL environment variable)")
 	cmd.Flags().StringVar(&outputFile, "output", "", "File to save the generated post text (optional)")
 
 	return cmd
