@@ -1,0 +1,134 @@
+# Git and version control
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+README*.md
+*.md
+docs/
+*.txt
+LICENSE
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.cursor/
+
+# OS specific files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Python development files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.cache
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Virtual environments
+.env
+.venv/
+venv/
+ENV/
+env/
+
+# Node.js (if present)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Logs and temporary files
+*.log
+logs/
+/tmp/
+temp/
+*.tmp
+*.bak
+
+# Test and development files
+tests/
+test_output/
+*.test
+
+# Audio and media files (too large for container)
+uploads/
+output/
+processed_audio/
+*.wav
+*.mp3
+*.m4a
+*.mp4
+*.avi
+*.mov
+large_audio_files/
+
+# Configuration and secrets
+*.key
+*.pem
+*.p12
+service-account*.json
+google-credentials*.json
+.env.local
+.env.*.local
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
+
+# Development and debugging files
+art19_*.html
+art19_*.json
+*.debug
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# AI/ML models (download at runtime)
+models/
+*.model
+*.pkl
+*.h5
+
+# Scripts and tools (not needed in container)
+scripts/
+tools/
+
+# Backup files
+*.backup
+*.bak.*
+
+# Go-specific files (if mixed language project)
+*.exe
+*.exe~
+*.dll
+*.dylib
+go.work
+go.sum
+go.mod
+
+# Other container files
+Dockerfile*
+docker-compose*.yml 

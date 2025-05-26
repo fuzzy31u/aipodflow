@@ -148,7 +148,7 @@ dev_settings.py
 *.sqlite3
 
 # Container and deployment artifacts
-.dockerignore
+# .dockerignore should be tracked
 
 # AI/ML model files (if downloaded locally)
 models/
