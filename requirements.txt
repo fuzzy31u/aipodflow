@@ -1,0 +1,37 @@
+# Core dependencies
+google-adk==0.1.0
+fastapi==0.104.1
+uvicorn==0.24.0
+python-multipart==0.0.6
+
+# AI/ML and Audio Processing
+anthropic==0.7.8
+google-cloud-speech==2.23.0
+google-cloud-aiplatform==1.38.1
+pydub==0.25.1
+librosa==0.10.1
+numpy==1.24.3
+
+# HTTP requests and API clients
+requests==2.31.0
+httpx==0.25.2
+tweepy==4.14.0
+
+# Environment and configuration
+python-dotenv==1.0.0
+pydantic==2.5.0
+pydantic-settings==2.1.0
+
+# Testing
+pytest==7.4.3
+pytest-asyncio==0.21.1
+pytest-mock==3.12.0
+
+# Audio format support
+ffmpeg-python==0.2.0
+
+# Logging and monitoring
+structlog==23.2.0
+
+# File handling
+aiofiles==23.2.1
