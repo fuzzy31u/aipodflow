@@ -20,6 +20,49 @@ go.work
 
 # Environment variables
 .env
+.env.local
+.env.*.local
+
+# Python specific files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytype/
+.pyre/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# Environments
+.venv
+venv/
+ENV/
+env/
+.env
+.venv/
 
 # IDE files
 .idea/
@@ -27,6 +70,9 @@ go.work
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
+*.swp
+*.swo
+*~
 
 # OS specific files
 .DS_Store
@@ -35,6 +81,7 @@ go.work
 .Spotlight-V100
 .Trashes
 ehthumbs.db
+Thumbs.db
 
 # Node.js dependencies
 node_modules/
@@ -52,10 +99,20 @@ art19_update_close_debug.html
 .cursor/
 .windsurfrules
 
-# Catch-all for other temp/debug files
+# Logging and temporary files
 *.log
 *.tmp
 *.bak
+logs/
+/tmp/
+temp/
+
+# Audio processing temporary files
+/tmp/podcast_processing/
+processed_audio/
+*.wav.tmp
+*.mp3.tmp
+*.m4a.tmp
 
 # Scripts directory should be tracked!
 !scripts/
@@ -63,14 +120,50 @@ art19_update_close_debug.html
 # Package files (tracked)
 !package.json
 !package-lock.json
-Thumbs.db
 
 # Application specific
 uploads/*
 !uploads/.gitkeep
+test_output/
+output/
 
 # Project specific binaries
 aipodflow
 
-# Output directory
-output/
+# API keys and sensitive configuration
+*.key
+*.pem
+*.p12
+service-account*.json
+google-credentials*.json
+
+# Local development files
+.local/
+local_config.py
+dev_settings.py
+
+# Database files (if any)
+*.db
+*.sqlite
+*.sqlite3
+
+# Container and deployment artifacts
+.dockerignore
+
+# AI/ML model files (if downloaded locally)
+models/
+*.model
+*.pkl
+*.h5
+
+# Large media files that shouldn't be in git
+*.mp4
+*.avi
+*.mov
+*.mkv
+*.webm
+large_audio_files/
+
+# Backup files
+*.backup
+*.bak.*
