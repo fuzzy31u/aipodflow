@@ -167,3 +167,6 @@ large_audio_files/
 # Backup files
 *.backup
 *.bak.*
+*.mp3
+*.wav
+*.m4a
