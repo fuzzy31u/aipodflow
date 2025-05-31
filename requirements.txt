@@ -7,6 +7,7 @@ python-multipart==0.0.6
 # AI/ML and Audio Processing
 anthropic==0.7.8
 google-cloud-speech>=2.30.0
+google-cloud-storage>=2.10.0
 google-cloud-aiplatform==1.38.1
 pydub==0.25.1
 librosa==0.10.1
