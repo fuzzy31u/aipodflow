@@ -11,7 +11,7 @@ import logging
 from typing import Dict, Any, Optional
 from pathlib import Path
 
-from google_adk import Agent
+from google.adk import Agent
 
 from .audio_processing_agent import AudioProcessingAgent
 from .transcription_agent import TranscriptionAgent
@@ -32,10 +32,16 @@ class OrchestratorAgent(Agent):
     3. Content Generation
     4. Publishing & Distribution
     """
+    
+    # Define pydantic model fields
+    audio_processor: Optional[Any] = None
+    transcriber: Optional[Any] = None
+    content_generator: Optional[Any] = None
+    publisher: Optional[Any] = None
 
-    def __init__(self):
+    def __init__(self, **data):
         """Initialize the orchestrator with all sub-agents."""
-        super().__init__(name="orchestrator")
+        super().__init__(name="orchestrator", **data)
         
         # Initialize all workflow agents
         self.audio_processor = AudioProcessingAgent()

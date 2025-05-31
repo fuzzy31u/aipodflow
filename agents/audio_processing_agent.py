@@ -1,23 +1,23 @@
 """
 Audio Processing Agent
 
-This agent handles audio editing and processing tasks including:
-- Trimming and combining audio files
-- Volume normalization
-- Adding intro/outro segments
-- Format conversion and optimization
+This agent handles audio file processing, including format conversion, audio enhancement,
+noise reduction, and preparation for transcription and publishing.
 """
 
-import os
 import logging
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, Tuple, List
+import asyncio
 from pathlib import Path
 import tempfile
+import os
 
-from google_adk import Agent
+# Audio processing libraries
 from pydub import AudioSegment
 import librosa
 import numpy as np
+
+from google.adk import Agent
 
 
 logger = logging.getLogger(__name__)
@@ -25,25 +25,23 @@ logger = logging.getLogger(__name__)
 
 class AudioProcessingAgent(Agent):
     """
-    Audio Processing Agent for podcast workflow.
+    Audio Processing Agent that handles file format conversion, audio enhancement,
+    and preparation for both transcription and publishing workflows.
     
     Handles all audio editing and processing tasks to prepare raw audio
     for transcription and final publishing.
     """
+    
+    # Define pydantic model fields
+    target_format: str = "wav"  # Standard format for transcription
+    target_sample_rate: int = 16000  # Standard for speech recognition
+    target_channels: int = 1  # Mono for speech
+    noise_threshold: int = -60  # dB threshold for silence removal
+    normalize_target_db: int = -20  # Target volume level
 
-    def __init__(self):
+    def __init__(self, **data):
         """Initialize the audio processing agent."""
-        super().__init__(name="audio_processor")
-        
-        # Default audio settings
-        self.target_format = "wav"  # Standard format for transcription
-        self.target_sample_rate = 16000  # Standard for speech recognition
-        self.target_channels = 1  # Mono for speech
-        
-        # Audio processing parameters
-        self.noise_threshold = -60  # dB threshold for silence removal
-        self.normalize_target_db = -20  # Target volume level
-        
+        super().__init__(name="audio_processor", **data)
         logger.info("Audio processing agent initialized")
 
     async def process_audio(
@@ -202,22 +200,23 @@ class AudioProcessingAgent(Agent):
         Returns:
             Audio with silence removed
         """
-        # TODO: Implement more sophisticated silence detection
-        # For now, use pydub's built-in silence detection
-        from pydub.silence import strip_silence
-        
         try:
-            # Strip silence with 1 second minimum chunk
-            stripped = strip_silence(
-                audio,
-                silence_thresh=self.noise_threshold,
-                chunk_size=1000  # 1 second chunks
-            )
+            from pydub.silence import detect_leading_silence
             
-            if len(stripped) < len(audio):
-                logger.info(f"Removed {(len(audio) - len(stripped)) / 1000:.1f}s of silence")
+            # Detect leading silence
+            start_trim = detect_leading_silence(audio, silence_threshold=self.noise_threshold)
             
-            return stripped
+            # Detect trailing silence by reversing the audio
+            end_trim = detect_leading_silence(audio.reverse(), silence_threshold=self.noise_threshold)
+            
+            # Trim the audio
+            duration = len(audio)
+            trimmed = audio[start_trim:duration-end_trim]
+            
+            if len(trimmed) < len(audio):
+                logger.info(f"Removed {(len(audio) - len(trimmed)) / 1000:.1f}s of silence")
+            
+            return trimmed if len(trimmed) > 0 else audio
         
         except Exception as e:
             logger.warning(f"Silence removal failed: {str(e)}, skipping")

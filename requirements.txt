@@ -1,12 +1,12 @@
 # Core dependencies
 google-adk==0.1.0
-fastapi==0.104.1
-uvicorn==0.24.0
+fastapi>=0.115.0
+uvicorn>=0.34.0
 python-multipart==0.0.6
 
 # AI/ML and Audio Processing
 anthropic==0.7.8
-google-cloud-speech==2.23.0
+google-cloud-speech>=2.30.0
 google-cloud-aiplatform==1.38.1
 pydub==0.25.1
 librosa==0.10.1
@@ -19,7 +19,7 @@ tweepy==4.14.0
 
 # Environment and configuration
 python-dotenv==1.0.0
-pydantic==2.5.0
+pydantic>=2.5.0
 pydantic-settings==2.1.0
 
 # Testing

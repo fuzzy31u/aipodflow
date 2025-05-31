@@ -1,8 +1,8 @@
 """
 Content Generation Agent
 
-This agent uses Large Language Models (Claude, Gemini) to generate textual content
-from podcast transcripts, including titles, descriptions, show notes, and social media content.
+This agent handles the generation of various content pieces from podcast transcripts,
+including show notes, social media posts, blog articles, and other marketing materials.
 """
 
 import os
@@ -10,7 +10,7 @@ import logging
 from typing import Dict, Any, Optional, List
 import json
 
-from google_adk import Agent
+from google.adk import Agent
 import anthropic
 from google.cloud import aiplatform
 
@@ -20,39 +20,45 @@ logger = logging.getLogger(__name__)
 
 class ContentGenerationAgent(Agent):
     """
-    Content Generation Agent for creating podcast metadata and promotional content.
+    Content Generation Agent that creates marketing content from podcast transcripts.
     
-    Uses LLMs to generate episode titles, descriptions, show notes, and social media
-    content from transcripts. Supports multiple languages for APAC markets.
+    Uses AI models to generate titles, descriptions, show notes, social media posts,
+    and other content pieces optimized for different platforms and languages.
     """
+    
+    # Define pydantic model fields
+    anthropic_client: Optional[Any] = None
+    gemini_client: Optional[Any] = None
+    model_preference: str = "anthropic"  # "anthropic" or "gemini"
+    max_transcript_length: int = 50000  # characters
+    temperature: float = 0.7
+    max_tokens: int = 2000
+    prompt_templates: Optional[Dict[str, str]] = None
+    
+    # Supported output languages
+    supported_languages: Dict[str, str] = {
+        "en": "English",
+        "ja": "Japanese",
+        "zh": "Chinese",
+        "ko": "Korean",
+        "th": "Thai",
+        "vi": "Vietnamese",
+        "id": "Indonesian",
+        "ms": "Malay",
+        "tl": "Filipino",
+        "hi": "Hindi",
+        "ta": "Tamil"
+    }
 
-    def __init__(self):
+    def __init__(self, **data):
         """Initialize the content generation agent."""
-        super().__init__(name="content_generator")
+        super().__init__(name="content_generator", **data)
         
-        # Initialize LLM clients
-        self.anthropic_client = None
-        self.gemini_client = None
-        
-        self._initialize_llm_clients()
-        
-        # Content generation templates
+        # Load prompt templates
         self.prompt_templates = self._load_prompt_templates()
         
-        # Supported output languages
-        self.supported_languages = {
-            "en": "English",
-            "ja": "Japanese",
-            "zh": "Chinese",
-            "ko": "Korean",
-            "th": "Thai",
-            "vi": "Vietnamese",
-            "id": "Indonesian",
-            "ms": "Malay",
-            "tl": "Filipino",
-            "hi": "Hindi",
-            "ta": "Tamil"
-        }
+        # Initialize LLM clients
+        self._initialize_llm_clients()
         
         logger.info("Content generation agent initialized")
 

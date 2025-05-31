@@ -1,24 +1,23 @@
 """
 Publishing Agent
 
-This agent coordinates publishing and distribution of podcast episodes across
-multiple platforms including Art19, websites, and social media.
+This agent handles the publishing of podcast episodes and related content to various
+platforms including podcast hosting services, social media, and content management systems.
 """
 
-import os
 import logging
 from typing import Dict, Any, Optional, List
+import json
 import asyncio
 from pathlib import Path
+import os
 
-from google_adk import Agent
+from google.adk import Agent
 
 # Import platform-specific connectors
-import sys
-sys.path.append(str(Path(__file__).parent.parent))
 from connectors.art19_api import Art19Connector
-from connectors.twitter_api import TwitterConnector
 from connectors.vercel_api import VercelConnector
+from connectors.twitter_api import TwitterConnector
 
 
 logger = logging.getLogger(__name__)
@@ -26,24 +25,32 @@ logger = logging.getLogger(__name__)
 
 class PublishingAgent(Agent):
     """
-    Publishing Agent for distributing podcast content across platforms.
+    Publishing Agent that handles distribution of podcast episodes and content.
     
-    Coordinates publishing to:
-    - Art19 (podcast hosting)
-    - Website/Vercel (episode pages)
-    - Social Media (Twitter, etc.)
+    Manages publishing to podcast platforms, websites, and social media channels
+    with support for scheduling and multi-platform coordination.
     """
+    
+    # Define pydantic model fields
+    art19_connector: Optional[Any] = None
+    vercel_connector: Optional[Any] = None
+    twitter_connector: Optional[Any] = None
+    auto_publish: bool = False
+    schedule_enabled: bool = False
+    publishing_config: Optional[Dict[str, Any]] = None
 
-    def __init__(self):
-        """Initialize the publishing agent with all platform connectors."""
-        super().__init__(name="publisher")
+    def __init__(self, **data):
+        """Initialize the publishing agent."""
+        super().__init__(name="publisher", **data)
         
         # Initialize platform connectors
-        self.art19_connector = Art19Connector()
-        self.twitter_connector = TwitterConnector()
-        self.vercel_connector = VercelConnector()
+        self._initialize_connectors()
         
-        # Publishing configuration
+        logger.info("Publishing agent initialized")
+
+    def _initialize_connectors(self):
+        """Initialize all platform connectors."""
+        # Initialize publishing configuration
         self.publishing_config = {
             "art19": {
                 "enabled": os.getenv("ART19_ENABLED", "true").lower() == "true",
@@ -57,12 +64,31 @@ class PublishingAgent(Agent):
             },
             "social_media": {
                 "enabled": os.getenv("SOCIAL_MEDIA_ENABLED", "true").lower() == "true",
-                "platforms": ["twitter"],  # Can be extended to include more platforms
+                "platforms": ["twitter"],
                 "auto_post": os.getenv("SOCIAL_AUTO_POST", "false").lower() == "true"
             }
         }
         
-        logger.info("Publishing agent initialized with platform connectors")
+        try:
+            self.art19_connector = Art19Connector()
+            logger.info("Art19 connector initialized")
+        except Exception as e:
+            logger.warning(f"Failed to initialize Art19 connector: {e}")
+            self.art19_connector = None
+            
+        try:
+            self.vercel_connector = VercelConnector()
+            logger.info("Vercel connector initialized")
+        except Exception as e:
+            logger.warning(f"Failed to initialize Vercel connector: {e}")
+            self.vercel_connector = None
+            
+        try:
+            self.twitter_connector = TwitterConnector()
+            logger.info("Twitter connector initialized")
+        except Exception as e:
+            logger.warning(f"Failed to initialize Twitter connector: {e}")
+            self.twitter_connector = None
 
     async def publish_episode(
         self,

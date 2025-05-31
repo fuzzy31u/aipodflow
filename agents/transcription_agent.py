@@ -1,16 +1,18 @@
 """
 Transcription Agent
 
-This agent handles speech-to-text conversion with support for multiple APAC languages.
-It integrates with Google Cloud Speech-to-Text API and other ASR services.
+This agent handles audio transcription using Google Cloud Speech-to-Text API.
+It processes audio files and returns accurate transcripts with speaker identification
+and timestamps when available.
 """
 
 import os
 import logging
 from typing import Dict, Any, Optional, List
 from pathlib import Path
+import asyncio
 
-from google_adk import Agent
+from google.adk import Agent
 from google.cloud import speech
 
 
@@ -19,40 +21,42 @@ logger = logging.getLogger(__name__)
 
 class TranscriptionAgent(Agent):
     """
-    Transcription Agent for converting audio to text.
+    Transcription Agent that converts audio to text using Google Cloud Speech-to-Text.
     
-    Supports multiple APAC languages and can integrate with various
-    speech recognition services.
+    Supports multiple languages with focus on APAC region languages.
+    Provides high-quality transcription with speaker diarization when available.
     """
+    
+    # Define pydantic model fields
+    speech_client: Optional[Any] = None
+    max_audio_length_minutes: int = 60
+    enable_speaker_diarization: bool = True
+    enable_profanity_filter: bool = False
+    
+    # Supported APAC language codes
+    supported_languages: Dict[str, str] = {
+        "en-US": "English (US)",
+        "en-AU": "English (Australia)",
+        "ja-JP": "Japanese",
+        "zh-CN": "Chinese (Mandarin, Simplified)",
+        "zh-TW": "Chinese (Traditional)",
+        "ko-KR": "Korean",
+        "th-TH": "Thai",
+        "vi-VN": "Vietnamese",
+        "id-ID": "Indonesian",
+        "ms-MY": "Malay",
+        "tl-PH": "Filipino",
+        "hi-IN": "Hindi",
+        "ta-IN": "Tamil",
+        "te-IN": "Telugu",
+        "bn-IN": "Bengali"
+    }
 
-    def __init__(self):
+    def __init__(self, **data):
         """Initialize the transcription agent."""
-        super().__init__(name="transcriber")
-        
-        # Supported APAC language codes
-        self.supported_languages = {
-            "en-US": "English (US)",
-            "en-AU": "English (Australia)",
-            "ja-JP": "Japanese",
-            "zh-CN": "Chinese (Mandarin, Simplified)",
-            "zh-TW": "Chinese (Traditional)",
-            "ko-KR": "Korean",
-            "th-TH": "Thai",
-            "vi-VN": "Vietnamese",
-            "id-ID": "Indonesian",
-            "ms-MY": "Malay",
-            "tl-PH": "Filipino",
-            "hi-IN": "Hindi",
-            "ta-IN": "Tamil",
-            "te-IN": "Telugu",
-            "bn-IN": "Bengali"
-        }
-        
-        # Initialize Google Cloud Speech client
-        self.speech_client = None
+        super().__init__(name="transcriber", **data)
         self._initialize_speech_client()
-        
-        logger.info(f"Transcription agent initialized with {len(self.supported_languages)} languages")
+        logger.info("Transcription agent initialized")
 
     def _initialize_speech_client(self):
         """Initialize Google Cloud Speech client."""
@@ -131,12 +135,8 @@ class TranscriptionAgent(Agent):
             Dict containing transcript and metadata
         """
         try:
-            # Read audio file
-            with open(audio_path, "rb") as audio_file:
-                audio_content = audio_file.read()
-            
-            # Configure audio settings
-            audio = speech.RecognitionAudio(content=audio_content)
+            # Check file size first
+            file_size_mb = Path(audio_path).stat().st_size / (1024 * 1024)
             
             # Configure recognition settings
             config = speech.RecognitionConfig(
@@ -145,26 +145,39 @@ class TranscriptionAgent(Agent):
                 language_code=language_code,
                 alternative_language_codes=options.get("alternative_languages", []),
                 enable_automatic_punctuation=True,
-                enable_speaker_diarization=options.get("speaker_diarization", False),
-                diarization_speaker_count=options.get("speaker_count", 2),
                 enable_word_time_offsets=True,
                 enable_word_confidence=True,
                 use_enhanced=True,
                 model=options.get("model", "latest_long")  # Optimized for longer audio
             )
             
-            # Handle long audio files (>1 minute) with long_running_recognize
-            file_size_mb = Path(audio_path).stat().st_size / (1024 * 1024)
-            
-            if file_size_mb > 10:  # Use async for larger files
-                logger.info("Using long-running recognition for large file")
-                operation = self.speech_client.long_running_recognize(
-                    config=config, audio=audio
+            # Add speaker diarization if requested (using updated API format)
+            if options.get("speaker_diarization", False):
+                diarization_config = speech.SpeakerDiarizationConfig(
+                    enable_speaker_diarization=True,
+                    max_speaker_count=options.get("speaker_count", 6)
                 )
-                response = operation.result(timeout=3600)  # 1 hour timeout
-            else:
-                logger.info("Using synchronous recognition")
-                response = self.speech_client.recognize(config=config, audio=audio)
+                config.diarization_config = diarization_config
+            
+            # Handle large files (>10MB) using Cloud Storage
+            if file_size_mb > 10:
+                logger.info(f"File size {file_size_mb:.1f}MB > 10MB, using Cloud Storage method")
+                # For large files, use fallback method for now
+                # TODO: Implement Cloud Storage upload for large files
+                logger.warning("Large file detected, falling back to alternative transcription")
+                return await self._transcribe_with_fallback(audio_path, language_code, options)
+            
+            # For smaller files, read and upload directly
+            logger.info(f"File size {file_size_mb:.1f}MB, using direct upload")
+            with open(audio_path, "rb") as audio_file:
+                audio_content = audio_file.read()
+            
+            # Configure audio settings
+            audio = speech.RecognitionAudio(content=audio_content)
+            
+            # Use synchronous recognition for smaller files
+            logger.info("Using synchronous recognition")
+            response = self.speech_client.recognize(config=config, audio=audio)
             
             # Process response
             return self._process_google_cloud_response(response, language_code)
