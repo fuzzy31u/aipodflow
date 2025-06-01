@@ -208,106 +208,101 @@ class ContentGenerationAgent(Agent):
         
         return {
             "title": f"""
-Create a title for {podcast_info.get('name', 'the podcast')} episode #{podcast_info.get('current_episode', 'N')}.
+{podcast_info.get('name', 'the podcast')} エピソード #{podcast_info.get('current_episode', 'N')} のタイトルを作成してください。
 
-TITLE FORMAT RULES:
-1. Format: "{content_style.get('title_format', 'Topic1 / Topic2')}"
-2. Separator: "{content_style.get('title_separator', ' / ')}"
-3. Maximum topics: {content_style.get('title_max_topics', 3)}
-4. Language style: {content_style.get('title_language_mix', 'Natural with technical terms')}
+タイトル形式ルール:
+1. 形式: "{content_style.get('title_format', 'Topic1 / Topic2')}"
+2. 区切り文字: "{content_style.get('title_separator', ' / ')}"
+3. 最大トピック数: {content_style.get('title_max_topics', 3)}
+4. 言語スタイル: {content_style.get('title_language_mix', 'Natural with technical terms')}
 
-CONTENT THEMES TO FOCUS ON:
+注目すべきコンテンツテーマ:
 {chr(10).join('- ' + theme for theme in content_themes)}
 
-IMPORTANT: Extract ONLY the actual topics discussed in the transcript. Do NOT create fictional content.
+重要: 以下のトランスクリプト全体から実際に話し合われた具体的なトピックのみを抽出してください。架空の内容は作成しないでください。
 
-Based on this transcript, identify the main topics discussed and create a title following the format:
+完全なトランスクリプト:
+{{transcript}}
 
-Transcript: {{transcript_preview}}
-
-Generate ONLY the title based on actual content discussed:""",
+実際に話し合われた内容に基づいてタイトルを生成してください:""",
 
             "description": f"""
-Create a description for {podcast_info.get('name', 'the podcast')} episode #{podcast_info.get('current_episode', 'N')}.
+{podcast_info.get('name', 'the podcast')} エピソード #{podcast_info.get('current_episode', 'N')} の説明文を作成してください。
 
-STYLE REQUIREMENTS:
-- Concept reference: {podcast_info.get('concept', 'Technology discussion')}
-- Tone: {content_style.get('description_tone', 'Professional and engaging')}
-- Target audience: {podcast_info.get('target_audience', 'Technology professionals')}
-- Length: {content_style.get('description_length', '200-400 characters')}
-- Include hashtag: {podcast_info.get('hashtag', '#podcast')}
+スタイル要件:
+- コンセプト参照: {podcast_info.get('concept', 'Technology discussion')}
+- トーン: {content_style.get('description_tone', 'Professional and engaging')}
+- ターゲット読者: {podcast_info.get('target_audience', 'Technology professionals')}
+- 文字数: {content_style.get('description_length', '200-400 characters')}
+- ハッシュタグ含む: {podcast_info.get('hashtag', '#podcast')}
 
-CONTENT APPROACH:
+内容アプローチ:
 {config.get('format_examples', {}).get('description_style', 'Engaging and informative')}
 
-IMPORTANT: Base the description ONLY on the actual content in the transcript. Do NOT add fictional details.
+重要: 以下のトランスクリプト全体の実際の内容のみに基づいて説明文を作成してください。架空の詳細は追加しないでください。
 
-Based on this transcript, create an engaging description:
+完全なトランスクリプト:
+{{transcript}}
 
-Transcript: {{transcript_preview}}
-
-Generate a description based on actual content discussed:""",
+実際に話し合われた内容に基づいて説明文を生成してください:""",
 
             "show_notes": f"""
-Create show notes for {podcast_info.get('name', 'the podcast')} episode #{podcast_info.get('current_episode', 'N')}.
+{podcast_info.get('name', 'the podcast')} エピソード #{podcast_info.get('current_episode', 'N')} のショーノートを作成してください。
 
-FORMAT REQUIREMENTS:
+形式要件:
 {content_style.get('show_notes_format', 'Summary + bullet points + links')}
 
-STYLE GUIDELINES:
+スタイルガイドライン:
 - {config.get('format_examples', {}).get('show_notes_style', 'Professional and detailed')}
-- Target audience: {podcast_info.get('target_audience', 'Technology professionals')}
-- Hosts: {podcast_info.get('hosts', 'Technology enthusiasts')}
+- ターゲット読者: {podcast_info.get('target_audience', 'Technology professionals')}
+- ホスト: {podcast_info.get('hosts', 'Technology enthusiasts')}
 
-CONTENT THEMES:
+内容テーマ:
 {chr(10).join('- ' + theme for theme in content_themes)}
 
-FEEDBACK SECTION:
-Include feedback request with {podcast_info.get('feedback_hashtag', '#podcast')} and {podcast_info.get('feedback_form', 'contact form')}.
+フィードバックセクション:
+{podcast_info.get('feedback_hashtag', '#podcast')} と {podcast_info.get('feedback_form', 'contact form')} でのフィードバック依頼を含めてください。
 
-IMPORTANT: Base show notes ONLY on actual content from the transcript. Extract real topics, quotes, and insights discussed.
+重要: 以下のトランスクリプト全体の実際の内容のみに基づいてショーノートを作成してください。実際のトピック、引用、洞察を抽出してください。
 
-Based on this transcript, create detailed show notes:
+完全なトランスクリプト:
+{{transcript}}
 
-Transcript: {{transcript_preview}}
-
-Generate show notes based on actual content:""",
+実際の内容に基づいて詳細なショーノートを生成してください:""",
 
             "summary": f"""
-Create a concise summary for {podcast_info.get('name', 'the podcast')} episode #{podcast_info.get('current_episode', 'N')}.
+{podcast_info.get('name', 'the podcast')} エピソード #{podcast_info.get('current_episode', 'N')} の要約を作成してください。
 
-REQUIREMENTS:
-- Length: {content_style.get('summary_length', '2-3 sentences maximum')}
-- Tone: {content_style.get('description_tone', 'Professional and engaging')}
-- Focus: Main value proposition and key insights
-- Concept: {podcast_info.get('concept', 'Technology discussion')}
+要件:
+- 長さ: {content_style.get('summary_length', '2-3 sentences maximum')}
+- トーン: {content_style.get('description_tone', 'Professional and engaging')}
+- 焦点: 主な価値提案と重要な洞察
+- コンセプト: {podcast_info.get('concept', 'Technology discussion')}
 
-IMPORTANT: Summarize ONLY the actual content discussed in the transcript.
+重要: 以下のトランスクリプト全体で実際に話し合われた内容のみを要約してください。
 
-Based on this transcript, create a concise summary:
+完全なトランスクリプト:
+{{transcript}}
 
-Transcript: {{transcript_preview}}
-
-Generate a summary of actual content discussed:""",
+実際に話し合われた内容の要約を生成してください:""",
 
             "social_media": f"""
-Create social media posts for {podcast_info.get('name', 'the podcast')} episode #{podcast_info.get('current_episode', 'N')}.
+{podcast_info.get('name', 'the podcast')} エピソード #{podcast_info.get('current_episode', 'N')} のソーシャルメディア投稿を作成してください。
 
-REQUIREMENTS:
-- Twitter/X: Under 280 characters, include {podcast_info.get('hashtag', '#podcast')}
-- LinkedIn: Professional, mention key insights
-- Instagram: Visual-friendly with emojis, community-focused
+要件:
+- Twitter/X: 280文字以内、{podcast_info.get('hashtag', '#podcast')} を含む
+- LinkedIn: プロフェッショナル、主要な洞察に言及
+- Instagram: 視覚的でフレンドリー、絵文字使用、コミュニティ重視
 
-TONE: {config.get('format_examples', {}).get('social_media_style', 'Engaging with relevant hashtags')}
-AUDIENCE: {podcast_info.get('target_audience', 'Technology professionals')}
+トーン: {config.get('format_examples', {}).get('social_media_style', 'Engaging with relevant hashtags')}
+読者: {podcast_info.get('target_audience', 'Technology professionals')}
 
-IMPORTANT: Base posts ONLY on actual topics discussed in the transcript.
+重要: 以下のトランスクリプト全体で実際に話し合われたトピックのみに基づいて投稿を作成してください。
 
-Based on this transcript, create social media content:
+完全なトランスクリプト:
+{{transcript}}
 
-Transcript: {{transcript_preview}}
-
-Generate social media posts based on actual content:"""
+実際の内容に基づいてソーシャルメディア投稿を生成してください:"""
         }
 
     async def generate_content(
@@ -379,10 +374,9 @@ Generate social media posts based on actual content:"""
     ) -> str:
         """Generate episode title."""
         prompt = self.prompt_templates["title"].format(
-            transcript=self._truncate_transcript(transcript, 3000),
+            transcript=transcript,
             language=language,
-            audience=options.get("target_audience", "general"),
-            transcript_preview=transcript[:100]  # Using a truncated preview
+            audience=options.get("target_audience", "general")
         )
         
         return await self._call_llm(prompt, max_tokens=50)
@@ -395,10 +389,9 @@ Generate social media posts based on actual content:"""
     ) -> str:
         """Generate episode description."""
         prompt = self.prompt_templates["description"].format(
-            transcript=self._truncate_transcript(transcript, 4000),
+            transcript=transcript,
             language=language,
-            style=options.get("show_style", "conversational"),
-            transcript_preview=transcript[:100]  # Using a truncated preview
+            style=options.get("show_style", "conversational")
         )
         
         return await self._call_llm(prompt, max_tokens=300)
@@ -411,10 +404,9 @@ Generate social media posts based on actual content:"""
     ) -> str:
         """Generate show notes."""
         prompt = self.prompt_templates["show_notes"].format(
-            transcript=self._truncate_transcript(transcript, 5000),
+            transcript=transcript,
             language=language,
-            format=options.get("notes_format", "bullet_points"),
-            transcript_preview=transcript[:100]  # Using a truncated preview
+            format=options.get("notes_format", "bullet_points")
         )
         
         return await self._call_llm(prompt, max_tokens=800)
@@ -427,10 +419,9 @@ Generate social media posts based on actual content:"""
     ) -> Dict[str, str]:
         """Generate social media content."""
         prompt = self.prompt_templates["social_media"].format(
-            transcript=self._truncate_transcript(transcript, 2000),
+            transcript=transcript,
             language=language,
-            voice=options.get("brand_voice", "friendly and professional"),
-            transcript_preview=transcript[:100]  # Using a truncated preview
+            voice=options.get("brand_voice", "friendly and professional")
         )
         
         response = await self._call_llm(prompt, max_tokens=400)
@@ -452,9 +443,7 @@ Generate social media posts based on actual content:"""
     ) -> str:
         """Generate episode summary."""
         prompt = self.prompt_templates["summary"].format(
-            transcript=self._truncate_transcript(transcript, 4000),
-            language=language,
-            transcript_preview=transcript[:100]  # Using a truncated preview
+            transcript=transcript
         )
         
         return await self._call_llm(prompt, max_tokens=250)
@@ -658,7 +647,7 @@ Generate social media posts based on actual content:"""
 • フィードバック募集中""",
             "summary": """今回のエピソードでは、テクノロジーと子育ての最新トピックを深掘り。ChatGPTがポッドキャストを推薦するようになった驚きの話から、AIツール選定疲れ、スマートリングを使った健康管理、そしてGoogle Homeを活用した家族コミュニケーションまで、実体験に基づいた貴重な情報をお届けします。""",
             "social_media": {
-                "twitter": "🐦 最新エピソード配信中！AIツールとスマートデバイスの活用法について語りました。ChatGPTがポッドキャストを発見？スマートリングの健康管理術は必見！ #ミッドFM #テクノロジー #子育て",
+                "twitter": "�� 最新エピソード配信中！AIツールとスマートデバイスの活用法について語りました。ChatGPTがポッドキャストを発見？スマートリングの健康管理術は必見！ #ミッドFM #テクノロジー #子育て",
                 "linkedin": "テクノロジーと子育ての最新エピソードを公開しました。AIツールの活用法とスマートデバイスを使った健康管理について詳しく解説しています。",
                 "instagram": "🎙️ 新エピソード配信！\n\n✨ AIツールの活用術\n📱 スマートリングレビュー\n🏠 Google Home活用法\n\n詳しくはプロフィールリンクから聞けます！\n#ミッドFM #ポッドキャスト #テクノロジー #子育て"
             },
