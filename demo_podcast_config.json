@@ -1,0 +1,40 @@
+{
+  "podcast_info": {
+    "name": "Tech Talk Weekly",
+    "concept": "Weekly discussions on emerging technology trends",
+    "concept_english": "Weekly discussions on emerging technology trends",
+    "current_episode": 42,
+    "hashtag": "#TechTalkWeekly",
+    "feedback_hashtag": "#TTWFeedback",
+    "hosts": "Software engineers and product managers",
+    "target_audience": "Technology professionals and enthusiasts",
+    "website": "https://example.com/techtalk",
+    "feedback_form": "Feedback form available on website"
+  },
+  "content_style": {
+    "title_format": "Episode N: Topic Discussion",
+    "title_separator": " - ",
+    "title_max_topics": 2,
+    "title_language_mix": "English with technical terminology",
+    "description_tone": "Professional and informative",
+    "description_length": "300-500 characters",
+    "show_notes_format": "Summary + detailed discussion points + resources + feedback section",
+    "summary_length": "3-4 sentences maximum"
+  },
+  "content_themes": [
+    "Emerging technology trends",
+    "Software development best practices",
+    "AI and machine learning applications",
+    "Cloud computing and infrastructure",
+    "Cybersecurity and privacy",
+    "Open source projects and communities",
+    "Career development in tech",
+    "Industry analysis and predictions"
+  ],
+  "format_examples": {
+    "title_style": "Clear, professional episode numbering with descriptive topics",
+    "description_style": "Professional summary with key takeaways",
+    "show_notes_style": "Detailed technical discussion with actionable insights",
+    "social_media_style": "Professional engagement with industry hashtags"
+  }
+} 
