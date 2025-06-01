@@ -205,6 +205,11 @@ class ContentGenerationAgent(Agent):
         podcast_info = config.get("podcast_info", {})
         content_style = config.get("content_style", {})
         content_themes = config.get("content_themes", [])
+        format_examples = config.get("format_examples", {})
+        
+        # Get description format from config
+        desc_format = format_examples.get("description_format", {})
+        show_format = format_examples.get("show_notes_format", {})
         
         return {
             "title": f"""
@@ -230,45 +235,43 @@ class ContentGenerationAgent(Agent):
 {podcast_info.get('name', 'the podcast')} エピソード #{podcast_info.get('current_episode', 'N')} の説明文を作成してください。
 
 スタイル要件:
-- コンセプト参照: {podcast_info.get('concept', 'Technology discussion')}
-- トーン: {content_style.get('description_tone', 'Professional and engaging')}
-- ターゲット読者: {podcast_info.get('target_audience', 'Technology professionals')}
-- 文字数: {content_style.get('description_length', '200-400 characters')}
+- 構造: {desc_format.get('structure', '簡潔な導入文 + 主要トピック整理')}
+- トピック形式: {desc_format.get('topic_format', '🔸 **トピック名**: 説明')}
+- 文字数: {content_style.get('description_length', '200-300文字')}  
 - ハッシュタグ含む: {podcast_info.get('hashtag', '#podcast')}
 
-内容アプローチ:
-{config.get('format_examples', {}).get('description_style', 'Engaging and informative')}
+参考例:
+{desc_format.get('example', '導入文 + 絵文字付きトピック整理')}
 
-重要: 以下のトランスクリプト全体の実際の内容のみに基づいて説明文を作成してください。架空の詳細は追加しないでください。
+重要: 以下のトランスクリプト全体の実際の内容のみに基づいて、同じ形式で説明文を作成してください。
 
 完全なトランスクリプト:
 {{transcript}}
 
-実際に話し合われた内容に基づいて説明文を生成してください:""",
+設定された形式で説明文を生成してください:""",
 
             "show_notes": f"""
 {podcast_info.get('name', 'the podcast')} エピソード #{podcast_info.get('current_episode', 'N')} のショーノートを作成してください。
 
-形式要件:
-{content_style.get('show_notes_format', 'Summary + bullet points + links')}
-
-スタイルガイドライン:
-- {config.get('format_examples', {}).get('show_notes_style', 'Professional and detailed')}
-- ターゲット読者: {podcast_info.get('target_audience', 'Technology professionals')}
-- ホスト: {podcast_info.get('hosts', 'Technology enthusiasts')}
-
-内容テーマ:
-{chr(10).join('- ' + theme for theme in content_themes)}
+ショーノート形式要件:
+- 構造: {show_format.get('structure', 'タイトル + 導入文 + トピック一覧 + フィードバック')}
+- タイトル形式: "## {podcast_info.get('current_episode', 'N')}. {{タイトル}}"
+- 日付形式: {show_format.get('date_format', 'YYYY/M/D')}
+- トピック形式: {show_format.get('topic_format', '🔸 **トピック名**: 詳細説明')}
+- 区切り線: {show_format.get('separator', '……………………………………')}
 
 フィードバックセクション:
-{podcast_info.get('feedback_hashtag', '#podcast')} と {podcast_info.get('feedback_form', 'contact form')} でのフィードバック依頼を含めてください。
+{show_format.get('feedback_section', 'フィードバック募集文').replace('{hashtag}', podcast_info.get('hashtag', '#podcast'))}
 
-重要: 以下のトランスクリプト全体の実際の内容のみに基づいてショーノートを作成してください。実際のトピック、引用、洞察を抽出してください。
+クレジットセクション:
+{show_format.get('credits_section', 'クレジット情報').replace('{hosts}', podcast_info.get('hosts', 'Hosts')).replace('{podcast_name}', podcast_info.get('name', 'Podcast'))}
+
+重要: 以下のトランスクリプト全体の実際の内容のみに基づいて、設定された形式でショーノートを作成してください。
 
 完全なトランスクリプト:
 {{transcript}}
 
-実際の内容に基づいて詳細なショーノートを生成してください:""",
+設定された形式でショーノートを生成してください:""",
 
             "summary": f"""
 {podcast_info.get('name', 'the podcast')} エピソード #{podcast_info.get('current_episode', 'N')} の要約を作成してください。
@@ -294,7 +297,7 @@ class ContentGenerationAgent(Agent):
 - LinkedIn: プロフェッショナル、主要な洞察に言及
 - Instagram: 視覚的でフレンドリー、絵文字使用、コミュニティ重視
 
-トーン: {config.get('format_examples', {}).get('social_media_style', 'Engaging with relevant hashtags')}
+トーン: {format_examples.get('social_media_style', 'Engaging with relevant hashtags')}
 読者: {podcast_info.get('target_audience', 'Technology professionals')}
 
 重要: 以下のトランスクリプト全体で実際に話し合われたトピックのみに基づいて投稿を作成してください。
@@ -647,7 +650,7 @@ class ContentGenerationAgent(Agent):
 • フィードバック募集中""",
             "summary": """今回のエピソードでは、テクノロジーと子育ての最新トピックを深掘り。ChatGPTがポッドキャストを推薦するようになった驚きの話から、AIツール選定疲れ、スマートリングを使った健康管理、そしてGoogle Homeを活用した家族コミュニケーションまで、実体験に基づいた貴重な情報をお届けします。""",
             "social_media": {
-                "twitter": "�� 最新エピソード配信中！AIツールとスマートデバイスの活用法について語りました。ChatGPTがポッドキャストを発見？スマートリングの健康管理術は必見！ #ミッドFM #テクノロジー #子育て",
+                "twitter": "🐦 最新エピソード配信中！AIツールとスマートデバイスの活用法について語りました。ChatGPTがポッドキャストを発見？スマートリングの健康管理術は必見！ #ミッドFM #テクノロジー #子育て",
                 "linkedin": "テクノロジーと子育ての最新エピソードを公開しました。AIツールの活用法とスマートデバイスを使った健康管理について詳しく解説しています。",
                 "instagram": "🎙️ 新エピソード配信！\n\n✨ AIツールの活用術\n📱 スマートリングレビュー\n🏠 Google Home活用法\n\n詳しくはプロフィールリンクから聞けます！\n#ミッドFM #ポッドキャスト #テクノロジー #子育て"
             },

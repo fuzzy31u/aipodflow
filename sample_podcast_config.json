@@ -1,0 +1,50 @@
+{
+  "podcast_info": {
+    "name": "Your Podcast Name",
+    "concept": "Your Podcast Concept",
+    "concept_english": "Your Podcast Concept in English",
+    "current_episode": 1,
+    "hashtag": "#yourpodcast",
+    "feedback_hashtag": "#yourpodcast",
+    "hosts": "Your Host Names",
+    "target_audience": "Your Target Audience",
+    "website": "https://your-podcast-website.com/",
+    "feedback_form": "Email or feedback form info"
+  },
+  "content_style": {
+    "title_format": "Topic1 / Topic2 / Topic3",
+    "title_separator": " / ",
+    "title_max_topics": 3,
+    "title_language_mix": "Natural language style for titles",
+    "description_tone": "Friendly and engaging tone",
+    "description_length": "100-200 characters",
+    "show_notes_format": "Opening summary + detailed points + links + feedback request",
+    "summary_length": "2-3 sentences"
+  },
+  "content_themes": [
+    "Main topic area 1",
+    "Main topic area 2", 
+    "Main topic area 3",
+    "Main topic area 4"
+  ],
+  "format_examples": {
+    "title_style": "How you prefer titles to be formatted",
+    "description_style": "Style guide for descriptions",
+    "show_notes_style": "Style guide for show notes",
+    "social_media_style": "Style guide for social media posts",
+    "description_format": {
+      "structure": "Brief intro + bulleted main topics",
+      "topic_format": "• **Topic Name**: Brief description",
+      "example": "This episode covers amazing topics including AI developments and tech trends.\n\n• **AI News**: Latest developments in artificial intelligence\n• **Tech Trends**: Emerging technologies to watch"
+    },
+    "show_notes_format": {
+      "structure": "Title + Date + Intro + Topics + Separator + Feedback + Credits",
+      "title_format": "Episode {episode_number}: {episode_title}",
+      "date_format": "MM/DD/YYYY",
+      "topic_format": "• **Topic Name**: Detailed description",
+      "separator": "---",
+      "feedback_section": "📧 **Send us your feedback!**\nReach out via {hashtag} or our website contact form!",
+      "credits_section": "🎙️ **Credits**\nHosts: {hosts}\nProduced by: {podcast_name}"
+    }
+  }
+} 
